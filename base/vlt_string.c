@@ -25,11 +25,13 @@ String* new_string_from_lit(const char* bytes)
     return new_string((const U8* const) bytes, strlen(bytes));
 }
 
-Bool del_string(String* str)
+void del_string(String* str)
 {
+    if (str == NULL)
+        return;
+
     free((U8*) str->bytes);
     str->bytes = NULL;
     str->len = 0;
     free(str);
-    return true;
 }

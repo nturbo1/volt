@@ -20,6 +20,6 @@ String* new_string_from_lit(const char* bytes);
 // Deletes a given String object.
 // It's the programmer's responsibility to set the string parameter
 // pointer to NULL.
-Bool del_string(String* str);
+void del_string(String* str);
 
 #endif // VLT_STRING_H
