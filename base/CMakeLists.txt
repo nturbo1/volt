@@ -1,5 +1,6 @@
 add_library(volt_c_base
     vlt_string.c
+    vlt_vector.c
 )
 
 target_include_directories(volt_c_base

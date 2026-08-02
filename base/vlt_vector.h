@@ -7,37 +7,36 @@ typedef struct
 {
     U64 len;
     U64 cap;
-    U64 elem_size;
+    const U64 elem_size;
     U8* buf;
 }
-Vect;
+Vec;
 
-Vect* new_vect(const U64 len, const U64 cap, const U64 elem_size);
+Vec* new_vec(const U64 len, const U64 cap, const U64 elem_size);
 
-// Deletes a given Vector object resources.
-// It's the programmer's responsibility to set the deleted Vector
+// Deletes a given Vecor object resources.
+// It's the programmer's responsibility to set the deleted Vecor
 // object pointer to NULL afterwards!
-Bool del_vect(Vect* vt);
+void del_vec(Vec* vt);
 
 // Inserts given element bytes at a given index.
-// If the element bytes size doesn't match the Vector element size,
-// then it returns false and may or may not abort the program,
-// otherwise it returns true.
-Bool vect_insert(const Vect* const vt,
-                 const U64 elem_size,
-                 const U8* const elem_bytes,
-                 const U64 idx);
+// If the element bytes size doesn't match the Vecor element size,
+// then it may or may not abort the program.
+void vec_insert(Vec* const vt,
+                const U64 elem_size,
+                const U8* const elem_bytes,
+                const U64 idx);
 
-// Appends given element bytes to the end of the Vector. 
-// If the element bytes size doesn't match the Vector element size,
-// then it returns false and may or may not abort the program,
-// otherwise it returns true.
-Bool vect_push(const Vect* const vt,
-               const U64 elem_size,
-               const U8* const elem_bytes);
+// Appends given element bytes to the end of the Vecor.
+// - If the element bytes size doesn't match the Vecor element size,
+//   then it may or may not abort the program.
+// - If the vector is empty, then it returns NULL.
+void vec_push(Vec* const vt,
+              const U64 elem_size,
+              const U8* const elem_bytes);
 
-// Removes element bytes at the end of the Vector and returns a
+// Removes element bytes at the end of the Vecor and returns a
 // pointer to the removed element bytes.
-void* vect_pop(const Vect* const vt);
+U8* vec_pop(Vec* const vt);
 
 #endif // BASE_VLT_VECTOR_H

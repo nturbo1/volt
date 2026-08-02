@@ -4,5 +4,6 @@
 #include "base.h"
 #include "vlt_string.h"
 #include "vlt_assert.h"
+#include "vlt_vector.h"
 
 #endif // BASE_INC_H
