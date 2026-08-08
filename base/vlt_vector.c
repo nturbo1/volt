@@ -2,8 +2,11 @@
 #include "vlt_assert.h"
 
 #include <stdlib.h>
+#include <stddef.h>
 
 #define VEC_DEFAULT_CAPACITY_SIZE 16
+#define NULL_VEC_POINTER_ERROR_MSG "NULL Vector pointer was passed"
+#define VEC_INDEX_OUT_OF_BOUNDS_ERROR_MSG "Vector index out of bounds."
 
 static void vec_expand(Vec* vt);
 
@@ -42,13 +45,13 @@ void del_vec(Vec* vt)
 }
 
 void vec_insert(Vec* const vt,
-                const U64 elem_size,
+                const U64 idx,
                 const U8* const elem_bytes,
-                const U64 idx)
+                const U64 elem_size)
 {
-    assert(vt != NULL, "NULL Vector pointer was passed.");
+    assert(vt != NULL, NULL_VEC_POINTER_ERROR_MSG);
     assert(vt->elem_size == elem_size, "Passed elem size doesn't match the vector elem_size.");
-    assert(idx < vt->len, "Vector index out of bounds.");
+    assert(idx < vt->len, VEC_INDEX_OUT_OF_BOUNDS_ERROR_MSG);
     assert(vt->buf != NULL, "Can't insert at an index to an empty Vector.");
 
     for (U64 i = 0; i < elem_size; i++)
@@ -59,7 +62,7 @@ void vec_push(Vec* const vt,
               const U64 elem_size,
               const U8* const elem_bytes)
 {
-    assert(vt != NULL, "NULL Vector pointer was passed.");
+    assert(vt != NULL, NULL_VEC_POINTER_ERROR_MSG);
     assert(vt->elem_size == elem_size, "Passed elem size doesn't match the vector elem_size.");
     assert_dbg(vt->len <= vt->cap, "Vector length can't be bigger than the capacity.");
     if (vt->len == vt->cap)
@@ -71,7 +74,7 @@ void vec_push(Vec* const vt,
 
 U8* vec_pop(Vec* const vt)
 {
-    assert(vt != NULL, "NULL Vector pointer was passed.");
+    assert(vt != NULL, NULL_VEC_POINTER_ERROR_MSG);
     if (vt->len == 0)
         return NULL;
 
@@ -85,9 +88,17 @@ U8* vec_pop(Vec* const vt)
     return last_elem_bytes_copy;
 }
 
-void vec_expand(Vec* vt)
+U8* vec_get(Vec* const vt, const U64 idx)
 {
-    assert(vt != NULL, "NULL Vector pointer was passed.");
+    assert(vt != NULL, NULL_VEC_POINTER_ERROR_MSG);
+    assert(idx < vt->len, VEC_INDEX_OUT_OF_BOUNDS_ERROR_MSG);
+
+    return vt->buf + (vt->elem_size * idx);
+}
+
+static void vec_expand(Vec* vt)
+{
+    assert(vt != NULL, NULL_VEC_POINTER_ERROR_MSG);
     if (vt->buf == NULL)
     {
         assert(vt->cap == 0, "Vector capacity MUST be 0 when the buffer is NULL.");

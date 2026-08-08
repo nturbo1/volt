@@ -23,9 +23,9 @@ void del_vec(Vec* vt);
 // If the element bytes size doesn't match the Vecor element size,
 // then it may or may not abort the program.
 void vec_insert(Vec* const vt,
-                const U64 elem_size,
+                const U64 idx,
                 const U8* const elem_bytes,
-                const U64 idx);
+                const U64 elem_size);
 
 // Appends given element bytes to the end of the Vecor.
 // - If the element bytes size doesn't match the Vecor element size,
@@ -38,5 +38,8 @@ void vec_push(Vec* const vt,
 // Removes element bytes at the end of the Vecor and returns a
 // pointer to the removed element bytes.
 U8* vec_pop(Vec* const vt);
+
+// Returns a pointer to element bytes at a given index.
+U8* vec_get(Vec* const vt, const U64 idx);
 
 #endif // BASE_VLT_VECTOR_H
