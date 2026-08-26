@@ -13,8 +13,8 @@ debug:
 clean:
 	@rm -rf build
 
-# test-debug: debug
-# 	@./build/test/mycc_test -v
-#
-# test: all
-# 	@./build/test/mycc_test -v
+test-debug: debug
+	@./build/vctest/execvctest -v
+
+test: all
+	@./build/vctest/execvctest -v

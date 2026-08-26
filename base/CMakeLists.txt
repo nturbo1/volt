@@ -18,4 +18,9 @@ target_link_libraries(volt_c_base
 target_sources(execvctest
     PRIVATE
     vlt_hashmap_test.c
+    vlt_vector_test.c
+)
+target_link_libraries(execvctest
+    PRIVATE
+    volt_c_base
 )
