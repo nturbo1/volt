@@ -7,12 +7,12 @@ typedef struct
 {
     U64 len;
     U64 cap;
-    const U64 elem_size;
+    const U64 elemSize;
     U8* buf;
 }
 Vec;
 
-Vec* new_vec(const U64 len, const U64 cap, const U64 elem_size);
+Vec* new_vec(const U64 len, const U64 cap, const U64 elemSize);
 
 // Deletes a given Vecor object resources.
 // It's the programmer's responsibility to set the deleted Vecor
@@ -25,14 +25,14 @@ void del_vec(Vec* vt);
 void vec_insert(Vec* const vt,
                 const U64 idx,
                 const U8* const elem_bytes,
-                const U64 elem_size);
+                const U64 elemSize);
 
 // Appends given element bytes to the end of the Vecor.
 // - If the element bytes size doesn't match the Vecor element size,
 //   then it may or may not abort the program.
 // - If the vector is empty, then it returns NULL.
 void vec_push(Vec* const vt,
-              const U64 elem_size,
+              const U64 elemSize,
               const U8* const elem_bytes);
 
 // Removes element bytes at the end of the Vecor and returns a

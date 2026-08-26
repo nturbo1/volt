@@ -18,7 +18,7 @@ TEST(whenNewVec_thenNonNullVecWithValidProps,
     ASSERT_TRUE(v != NULL);
     ASSERT_TRUE(v->len == vLen);
     ASSERT_TRUE(v->cap == vCap);
-    ASSERT_TRUE(v->elem_size == vElemSize);
+    ASSERT_TRUE(v->elemSize == vElemSize);
     ASSERT_TRUE(v->buf != NULL);
 
     // CLEAN-UP
