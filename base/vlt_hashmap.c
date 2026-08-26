@@ -14,12 +14,16 @@ static void hmap_delElemNode(MapElemNode* node);
 static MapElemNode* new_mapElemNode(const U8* const key, const U64 keySize, U8* const val, const U64 valSize);
 static bool keyEqual(const U8* const key1, const U8* const key2, const U64 keySize);
 
+#define DEFAULT_HMAP_BUCKET_SIZE 16
+
 HMap* new_hmap()
 {
     HMap* hm = (HMap*) malloc(sizeof(HMap));
     assert(hm != NULL, "Failed to allocate memory for a HMap object.");
     hm->bucket = NULL;
-    hm->bucketSize = 0;
+    hm->bucket = malloc(sizeof(MapBucketEntry) * DEFAULT_HMAP_BUCKET_SIZE);
+    assert(hm->bucket != NULL, "Failed to allocate memory for a HMap buffer capacity.");
+    hm->bucketSize = DEFAULT_HMAP_BUCKET_SIZE;
     hm->size = 0;
 
     return hm;
