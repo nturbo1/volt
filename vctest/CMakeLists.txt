@@ -1,0 +1,18 @@
+add_executable(execvctest
+    execvctest.c
+)
+add_library(vctest
+    lib/vctest.c
+)
+target_include_directories(vctest
+    PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib
+)
+target_link_libraries(vctest
+    PUBLIC
+    compiler_warnings
+)
+target_link_libraries(execvctest
+    PRIVATE
+    vctest
+)

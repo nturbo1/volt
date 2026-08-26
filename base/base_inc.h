@@ -5,5 +5,6 @@
 #include "vlt_string.h"
 #include "vlt_assert.h"
 #include "vlt_vector.h"
+#include "vlt_hashmap.h"
 
 #endif // BASE_INC_H

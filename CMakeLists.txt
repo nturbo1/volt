@@ -4,6 +4,7 @@ include(cmake/configs.cmake)
 
 add_executable(volt main.c)
 
+add_subdirectory(vctest)
 add_subdirectory(base)
 
 target_link_libraries(volt

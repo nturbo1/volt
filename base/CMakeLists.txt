@@ -13,3 +13,9 @@ target_link_libraries(volt_c_base
     PUBLIC
     compiler_warnings
 )
+
+# TEST
+target_sources(execvctest
+    PRIVATE
+    vlt_hashmap_test.c
+)
