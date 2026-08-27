@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #define VEC_DEFAULT_CAPACITY_SIZE 16
 #define NULL_VEC_POINTER_ERROR_MSG "NULL Vector pointer was passed"
@@ -46,7 +47,7 @@ void del_vec(Vec* vt)
 
 void vec_insert(Vec* const vt,
                 const U64 idx,
-                const U8* const elem_bytes,
+                const U8* const elemBytes,
                 const U64 elemSize)
 {
     assert(vt != NULL, NULL_VEC_POINTER_ERROR_MSG);
@@ -55,12 +56,12 @@ void vec_insert(Vec* const vt,
     assert(vt->buf != NULL, "Can't insert at an index to an empty Vector.");
 
     for (U64 i = 0; i < elemSize; i++)
-        vt->buf[idx + i] = elem_bytes[i];
+        vt->buf[idx + i] = elemBytes[i];
 }
 
 void vec_push(Vec* const vt,
               const U64 elemSize,
-              const U8* const elem_bytes)
+              const U8* const elemBytes)
 {
     assert(vt != NULL, NULL_VEC_POINTER_ERROR_MSG);
     assert(vt->elemSize == elemSize, "Passed elem size doesn't match the vector elemSize.");
@@ -68,7 +69,7 @@ void vec_push(Vec* const vt,
     if (vt->len == vt->cap)
         vec_expand(vt);
 
-    vec_insert(vt, elemSize, elem_bytes, vt->len);
+    vec_insert(vt, elemSize, elemBytes, vt->len);
     vt->len++;
 }
 
@@ -78,14 +79,14 @@ U8* vec_pop(Vec* const vt)
     if (vt->len == 0)
         return NULL;
 
-    U8* last_elem_bytes_copy = (U8*) malloc(vt->elemSize);
-    assert(last_elem_bytes_copy != NULL, "Failed to allocate memory for a vector element.");
-    U8* last_elem_bytes = vt->buf + (vt->elemSize * (vt->len - 1));
+    U8* lastElemBytesCopy = (U8*) malloc(vt->elemSize);
+    assert(lastElemBytesCopy != NULL, "Failed to allocate memory for a vector element.");
+    U8* lastElemBytes = vt->buf + (vt->elemSize * (vt->len - 1));
     for (U64 i = 0; i < vt->elemSize; i++)
-        last_elem_bytes_copy[i] = last_elem_bytes[i];
+        lastElemBytesCopy[i] = lastElemBytes[i];
     vt->len--;
 
-    return last_elem_bytes_copy;
+    return lastElemBytesCopy;
 }
 
 U8* vec_get(Vec* const vt, const U64 idx)
@@ -109,14 +110,14 @@ static void vec_expand(Vec* vt)
         return;
     }
 
-    U64 new_cap = vt->cap * 2;
-    U8* new_buf = (U8*) malloc(new_cap);
-    assert(new_buf != NULL, "Failed to allocate memory to Vector new expanded buffer.");
+    U64 newCap = vt->cap * 2;
+    U8* newBuf = (U8*) malloc(newCap);
+    assert(newBuf != NULL, "Failed to allocate memory to Vector new expanded buffer.");
     // copy the raw bytes to the new buffer
     for (U64 i = 0; i < vt->len * vt->elemSize; i++)
-        new_buf[i] = vt->buf[i];
+        newBuf[i] = vt->buf[i];
 
     free(vt->buf);
-    vt->buf = new_buf;
-    vt->cap = new_cap;
+    vt->buf = newBuf;
+    vt->cap = newCap;
 }
