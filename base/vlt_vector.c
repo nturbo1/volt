@@ -54,8 +54,9 @@ void vec_insert(Vec* const vt,
     ASSERT(idx < vt->len, VEC_INDEX_OUT_OF_BOUNDS_ERROR_MSG);
     ASSERT(vt->buf != NULL, "Can't insert at an index to an empty Vector.");
 
-    for (U64 i = 0; i < elemSize; i++)
-        vt->buf[idx + i] = elemBytes[i];
+    U8* bufElemAtIdx = vt->buf + (idx * vt->elemSize);
+    for (U64 i = 0; i < vt->elemSize; i++)
+        bufElemAtIdx[i] = elemBytes[i];
 }
 
 void vec_push(Vec* const vt,
