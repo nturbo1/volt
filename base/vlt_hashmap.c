@@ -9,7 +9,7 @@
 #define HMAP_BUCKET_AND_BUCKET_SIZE_ARE_NOT_CONSISTENT_ERROR_MSG_FORMAT "HMap bucket %p and bucket size %zu are not consistent."
 
 static U64 hash(const U8* const key, const U64 keySize);
-static void hmap_delBucketEntry(MapBucketEntry* mbe);
+static void hmap_delBucketEntryElems(MapBucketEntry* mbe);
 static void hmap_delElemNode(MapElemNode* node);
 static MapElemNode* new_mapElemNode(const U8* const key, const U64 keySize, U8* const val, const U64 valSize);
 static bool keyEqual(const U8* const key1, const U8* const key2, const U64 keySize);
@@ -24,6 +24,11 @@ HMap* new_hmap()
     hm->bucket = malloc(sizeof(MapBucketEntry) * DEFAULT_HMAP_BUCKET_SIZE);
     ASSERT(hm->bucket != NULL, "Failed to allocate memory for a HMap buffer capacity.");
     hm->bucketSize = DEFAULT_HMAP_BUCKET_SIZE;
+    for (U64 i = 0; i < hm->bucketSize; i++)
+    {
+        hm->bucket[i].head = NULL;
+        hm->bucket[i].size = 0;
+    }
     hm->size = 0;
 
     return hm;
@@ -34,7 +39,8 @@ void del_hmap(HMap* hm)
     if (hm != NULL)
     {
         for (U64 i = 0; i < hm->bucketSize; i++)
-            hmap_delBucketEntry(hm->bucket + i);
+            hmap_delBucketEntryElems(hm->bucket + i);
+        free(hm->bucket);
         hm->bucket = NULL;
         hm->bucketSize = 0;
         hm->size = 0;
@@ -160,7 +166,7 @@ static U64 hash(const U8* const key, const U64 keySize) {
     return hashval;
 }
 
-static void hmap_delBucketEntry(MapBucketEntry* mbe)
+static void hmap_delBucketEntryElems(MapBucketEntry* mbe)
 {
     if (mbe != NULL)
     {
@@ -180,8 +186,6 @@ static void hmap_delBucketEntry(MapBucketEntry* mbe)
         }
         mbe->head = NULL;
         ASSERT(mbe->size == 0, "HMap bucket entry size doesn't match the nodes count.");
-        mbe->size = 0;
-        free(mbe);
     }
 }
 

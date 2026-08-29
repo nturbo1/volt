@@ -1,10 +1,16 @@
+#include "vlt_hashmap.h"
 #include "vctest.h"
 
 #include <stdbool.h>
 
-// TODO: Just for testing the vctest lib integration.
-//       Must be replaced with a propert test or be removed.
-TEST(simpleTest, "Simple Test description")
+TEST(whenNewHMap_thenNewHMapIsCreatedAndHMapObjIsInitializedProperlyAndPointerToNewHMapIsReturned,
+     "When new_hmap, then a new HMap obj is created with properly"
+     " initialized fields and a pointer to the HMap obj is returned")
 {
-    VCTEST_ASSERT_TRUE(true);
+    HMap* hm = new_hmap();
+    VCTEST_ASSERT_TRUE(hm != NULL);
+    VCTEST_ASSERT_TRUE(hm->size == 0);
+
+    del_hmap(hm);
+    hm = NULL;
 }
