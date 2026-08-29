@@ -112,7 +112,7 @@ static void vec_expand(Vec* vt)
     }
 
     U64 newCap = vt->cap * 2;
-    U8* newBuf = (U8*) malloc(newCap);
+    U8* newBuf = (U8*) malloc(newCap * vt->elemSize);
     ASSERT(newBuf != NULL, "Failed to allocate memory to Vector new expanded buffer.");
     // copy the raw bytes to the new buffer
     for (U64 i = 0; i < vt->len * vt->elemSize; i++)
