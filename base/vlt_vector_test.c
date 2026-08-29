@@ -2,28 +2,48 @@
 #include "base_inc.h"
 #include "vlt_vector.h"
 
+typedef struct VecTestInput
+{
+    const U64 len;
+    U64 cap;
+    U64 elemSize;
+    U8* buf;
+}
+VecTestInput;
+
 TEST(whenNewVec_thenNonNullVecWithValidProps,
      "When create a new Vec obj, then non-NULL obj must be returned and the obj"
      " must have valid properties/fields")
 {
-    // GIVEN
-    const U64 vLen = 0;
-    const U64 vCap = 4;
-    const U64 vElemSize = 2;
+    VecTestInput inputs[5] = {
+        { .len = 0, .cap = 4, .elemSize = 1, .buf = NULL},
+        { .len = 0, .cap = 4, .elemSize = 2, .buf = NULL},
+        { .len = 0, .cap = 4, .elemSize = 3, .buf = NULL},
+        { .len = 0, .cap = 4, .elemSize = 4, .buf = NULL},
+        { .len = 0, .cap = 4, .elemSize = 456, .buf = NULL},
+    };
 
-    // WHEN
-    Vec* v = new_vec(vLen, vCap, vElemSize);
+    for (int i = 0; i < 5; i++)
+    {
+        // GIVEN
+        U64 vLen = inputs[i].len;
+        U64 vCap = inputs[i].cap;
+        U64 vElemSize = inputs[i].elemSize;
 
-    // THEN
-    VCTEST_ASSERT_TRUE(v != NULL);
-    VCTEST_ASSERT_TRUE(v->len == vLen);
-    VCTEST_ASSERT_TRUE(v->cap == vCap);
-    VCTEST_ASSERT_TRUE(v->elemSize == vElemSize);
-    VCTEST_ASSERT_TRUE(v->buf != NULL);
+        // WHEN
+        Vec* v = new_vec(vLen, vCap, vElemSize);
 
-    // CLEAN-UP
-    del_vec(v);
-    v = NULL;
+        // THEN
+        VCTEST_ASSERT_TRUE(v != NULL);
+        VCTEST_ASSERT_TRUE(v->len == vLen);
+        VCTEST_ASSERT_TRUE(v->cap == vCap);
+        VCTEST_ASSERT_TRUE(v->elemSize == vElemSize);
+        VCTEST_ASSERT_TRUE(v->buf != NULL);
+
+        // CLEAN-UP
+        del_vec(v);
+        v = NULL;
+    }
 }
 
 TEST(whenVecPush_thenTheElemIsAppendedToVecAndVecIsUpdatedPropertly,
