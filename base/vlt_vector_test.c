@@ -190,14 +190,15 @@ TEST(whenVecInsert_thenTheElemIsInsertedToVecAtIndex,
         const U64 vCap = inputs[i].cap;
         const U64 vElemSize = inputs[i].elemSize;
         const U8* vElem = inputs[i].elemBytes;
+        Vec* v = new_vec(vLen, vCap, vElemSize);
+        VCTEST_ASSERT_TRUE(v != NULL);
+
         for (int k = 0; k < inputIndicesSize; k++)
         {
             // GIVEN
             const U64 vIdx = inputIndices[k];
 
             // WHEN
-            Vec* v = new_vec(vLen, vCap, vElemSize);
-            VCTEST_ASSERT_TRUE(v != NULL);
             vec_insert(v, vIdx, vElem, vElemSize);
 
             // THEN
@@ -207,11 +208,11 @@ TEST(whenVecInsert_thenTheElemIsInsertedToVecAtIndex,
             VCTEST_ASSERT_TRUE(v->len == vLen);
             for (U64 j = 0; j < vElemSize; j++)
                 VCTEST_ASSERT_TRUE(v->buf[(vIdx * vElemSize) + j] == vElem[j]);
-
-            // CLEAN-UP
-            del_vec(v);
-            v = NULL;
         }
+
+        // CLEAN-UP
+        del_vec(v);
+        v = NULL;
     }
 }
 
