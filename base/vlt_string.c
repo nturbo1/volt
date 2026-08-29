@@ -8,9 +8,9 @@
 String* new_string(const U8* const bytes, const U64 len)
 {
     String* new_str = (String*) malloc(sizeof(String));
-    assert(new_str != NULL, "Failed to allocate memory for a String object.");
+    ASSERT(new_str != NULL, "Failed to allocate memory for a String object.");
     const U8* str_bytes = (const U8*) malloc(len);
-    assert(str_bytes != NULL, "Failed to allocate memory for a String object character bytes.");
+    ASSERT(str_bytes != NULL, "Failed to allocate memory for a String object character bytes.");
     for (U64 i = 0; i < len; i++)
         *((U8*) &(str_bytes[i])) = bytes[i];
     new_str->bytes = str_bytes;

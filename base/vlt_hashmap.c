@@ -19,10 +19,10 @@ static bool keyEqual(const U8* const key1, const U8* const key2, const U64 keySi
 HMap* new_hmap()
 {
     HMap* hm = (HMap*) malloc(sizeof(HMap));
-    assert(hm != NULL, "Failed to allocate memory for a HMap object.");
+    ASSERT(hm != NULL, "Failed to allocate memory for a HMap object.");
     hm->bucket = NULL;
     hm->bucket = malloc(sizeof(MapBucketEntry) * DEFAULT_HMAP_BUCKET_SIZE);
-    assert(hm->bucket != NULL, "Failed to allocate memory for a HMap buffer capacity.");
+    ASSERT(hm->bucket != NULL, "Failed to allocate memory for a HMap buffer capacity.");
     hm->bucketSize = DEFAULT_HMAP_BUCKET_SIZE;
     hm->size = 0;
 
@@ -48,8 +48,8 @@ void hmap_put(HMap* const hm,
               U8* val,
               const U64 valSize)
 {
-    assert(hm != NULL, NULL_HMAP_POINTER_ERROR_MSG);
-    assert((hm->bucket == NULL) == (hm->bucketSize == 0),
+    ASSERT(hm != NULL, NULL_HMAP_POINTER_ERROR_MSG);
+    ASSERT((hm->bucket == NULL) == (hm->bucketSize == 0),
            HMAP_BUCKET_AND_BUCKET_SIZE_ARE_NOT_CONSISTENT_ERROR_MSG_FORMAT,
            (void*) hm->bucket,
            hm->bucketSize);
@@ -84,15 +84,15 @@ void hmap_put(HMap* const hm,
 
 MapElem* hmap_get(const HMap* const hm, const U8* const key, const U64 keySize)
 {
-    assert(hm != NULL, NULL_HMAP_POINTER_ERROR_MSG);
-    assert((hm->bucket == NULL) == (hm->bucketSize == 0),
+    ASSERT(hm != NULL, NULL_HMAP_POINTER_ERROR_MSG);
+    ASSERT((hm->bucket == NULL) == (hm->bucketSize == 0),
            HMAP_BUCKET_AND_BUCKET_SIZE_ARE_NOT_CONSISTENT_ERROR_MSG_FORMAT,
            (void*) hm->bucket,
            hm->bucketSize);
 
     const U64 keyHash = hash(key, keySize);
     MapBucketEntry* bucketEntry = hm->bucket + (keyHash % hm->bucketSize);
-    assert((bucketEntry->head == NULL) == (bucketEntry->size == 0),
+    ASSERT((bucketEntry->head == NULL) == (bucketEntry->size == 0),
            HMAP_BUCKET_ENTRY_HEAD_AND_SIZE_ARE_NOT_CONSISTENT_ERROR_MSG_FORMAT,
            (void*) bucketEntry->head,
            bucketEntry->size);
@@ -113,10 +113,10 @@ MapElem* hmap_get(const HMap* const hm, const U8* const key, const U64 keySize)
 
 void hmap_delete(HMap* const hm, const U8* const key, const U64 keySize)
 {
-    assert(hm != NULL, NULL_HMAP_POINTER_ERROR_MSG);
+    ASSERT(hm != NULL, NULL_HMAP_POINTER_ERROR_MSG);
     const U64 keyHash = hash(key, keySize);
     MapBucketEntry* bucketEntry = hm->bucket + (keyHash % hm->bucketSize);
-    assert((bucketEntry->head == NULL) == (bucketEntry->size == 0),
+    ASSERT((bucketEntry->head == NULL) == (bucketEntry->size == 0),
            HMAP_BUCKET_ENTRY_HEAD_AND_SIZE_ARE_NOT_CONSISTENT_ERROR_MSG_FORMAT,
            (void*) bucketEntry->head,
            bucketEntry->size);
@@ -164,7 +164,7 @@ static void hmap_delBucketEntry(MapBucketEntry* mbe)
 {
     if (mbe != NULL)
     {
-        assert((mbe->head == NULL) == (mbe->size == 0),
+        ASSERT((mbe->head == NULL) == (mbe->size == 0),
                HMAP_BUCKET_ENTRY_HEAD_AND_SIZE_ARE_NOT_CONSISTENT_ERROR_MSG_FORMAT,
                (void*) mbe->head,
                mbe->size);
@@ -179,7 +179,7 @@ static void hmap_delBucketEntry(MapBucketEntry* mbe)
             prev = NULL;
         }
         mbe->head = NULL;
-        assert(mbe->size == 0, "HMap bucket entry size doesn't match the nodes count.");
+        ASSERT(mbe->size == 0, "HMap bucket entry size doesn't match the nodes count.");
         mbe->size = 0;
         free(mbe);
     }
@@ -200,7 +200,7 @@ static void hmap_delElemNode(MapElemNode* node)
 static MapElemNode* new_mapElemNode(const U8* const key, const U64 keySize, U8* const val, const U64 valSize)
 {
     MapElemNode* newElemNode = malloc(sizeof(MapElemNode));
-    assert(newElemNode != NULL, "Failed to allocate memory for a MapElemNode object.");
+    ASSERT(newElemNode != NULL, "Failed to allocate memory for a MapElemNode object.");
     U8* elemKey = *((U8**) &newElemNode->elem.key);
     for (U64 i = 0; i < keySize; i++)
         elemKey[i] = key[i];

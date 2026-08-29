@@ -17,12 +17,12 @@
         }                                                           \
     } while (0)
 
-#define assert(cond, ...) ASSERT_IMPL(cond, __VA_ARGS__)
+#define ASSERT(cond, ...) ASSERT_IMPL(cond, __VA_ARGS__)
 
 #ifdef DEBUG
-# define assert_dbg(cond, ...) ASSERT_IMPL(cond, __VA_ARGS__)
+# define ASSERT_DBG(cond, ...) ASSERT_IMPL(cond, __VA_ARGS__)
 #else
-# define assert_dbg(...) do {} while (0);
+# define ASSERT_DBG(...) do {} while (0)
 #endif
 
 #endif // BASE_VLT_ASSERT_H

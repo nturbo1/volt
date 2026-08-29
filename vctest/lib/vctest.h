@@ -32,7 +32,7 @@ extern VCTestState _vctest_curr_test_state;
         { #name, VCTest_##name, description };                 \
     void VCTest_##name(void)
 
-#define ASSERT_TRUE(cond) \
+#define VCTEST_ASSERT_TRUE(cond) \
     do {                                                        \
         if (!(cond)) {                                          \
             _vctest_curr_test_state.failed = true;              \

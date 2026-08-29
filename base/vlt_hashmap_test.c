@@ -6,5 +6,5 @@
 //       Must be replaced with a propert test or be removed.
 TEST(simpleTest, "Simple Test description")
 {
-    ASSERT_TRUE(true);
+    VCTEST_ASSERT_TRUE(true);
 }
