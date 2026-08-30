@@ -106,7 +106,7 @@ MapElem* hmap_get(const HMap* const hm, const U8* const key, const U64 keySize)
     return NULL;
 }
 
-void hmap_delete(HMap* const hm, const U8* const key, const U64 keySize)
+void hmap_del(HMap* const hm, const U8* const key, const U64 keySize)
 {
     ASSERT(hm != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "HMap");
     const U64 keyHash = hash(key, keySize);
@@ -127,6 +127,9 @@ void hmap_delete(HMap* const hm, const U8* const key, const U64 keySize)
                 bucketEntry->head = curr->next;
 
             hmap_delElemNode(curr);
+            curr = NULL;
+            bucketEntry->size--;
+            hm->size--;
             return;
         }
         prev = curr;

@@ -50,6 +50,6 @@ void hmap_put(HMap* const hm,
 
 MapElem* hmap_get(const HMap* const hm, const U8* const key, const U64 keySize);
 
-bool hmap_del(HMap* const hm, const U8* const key, const U64 keySize);
+void hmap_del(HMap* const hm, const U8* const key, const U64 keySize);
 
 #endif // BASE_VLT_HASHMAP_H
