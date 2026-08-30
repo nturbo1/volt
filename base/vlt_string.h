@@ -15,7 +15,7 @@ String;
 String* new_string(const U8* const bytes, const U64 len);
 
 // Creates a new String object from a string literal.
-String* new_string_from_lit(const char* bytes);
+String* new_stringFromLit(const char* bytes);
 
 // Deletes a given String object.
 // It's the programmer's responsibility to set the string parameter

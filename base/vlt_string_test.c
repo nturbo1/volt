@@ -2,6 +2,8 @@
 #include "vctest.h"
 #include "base.h"
 
+#include <string.h>
+
 typedef struct StringTestInput
 {
     const U8* const strBytes;
@@ -88,5 +90,45 @@ TEST(whenNewString_thenNonNullPointerToStringMustBeReturned,
         VCTEST_ASSERT_TRUE(s->bytes != NULL);
         VCTEST_ASSERT_TRUE(s->len == len);
         VCTEST_ASSERT_TRUE( bytesEqual(s->bytes, bytes, len) ); // check the string bytes are copied
+
+        // CLEAN-UP
+        del_string(s);
+    }
+}
+
+TEST(whenNewStringFromLit_thenNonNullPointerToStringMustBeReturned,
+     "When new_stringFromLit, then a non-NULL pointer to a String"
+     " obj with properly initialized fields MUST be returned")
+{
+    const int testInputsSize = 8;
+    const char* inputs[8] = {
+            "Hello World!",
+            "",
+            "A",
+            " ",
+            " \t\n\r",
+            "!@#$%^&*()_+-=[]{}|;:',.<>/?`~",
+            "Café",
+            "The quick brown fox jumps over the lazy dog. THE QUICK BROWN FOX 0123456789",
+    };
+
+    for (int i = 0; i < testInputsSize; i++)
+    {
+        // GIVEN
+        const char* lit = inputs[i];
+        const U64 len = (U64) strlen(lit);;
+
+        // WHEN
+        String* s = new_stringFromLit(lit);
+
+        // THEN
+        VCTEST_ASSERT_TRUE(s != NULL);
+        VCTEST_ASSERT_TRUE(s->bytes != NULL);
+        VCTEST_ASSERT_TRUE(s->len == len);
+        VCTEST_ASSERT_TRUE( bytesEqual(s->bytes, (const U8* const) lit, len) );
+        VCTEST_ASSERT_TRUE( s->bytes != (U8*) lit ); // check the string bytes are copied
+
+        // CLEAN-UP
+        del_string(s);
     }
 }

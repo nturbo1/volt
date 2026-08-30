@@ -20,7 +20,7 @@ String* new_string(const U8* const bytes, const U64 len)
     return new_str;
 }
 
-String* new_string_from_lit(const char* bytes)
+String* new_stringFromLit(const char* bytes)
 {
     return new_string((const U8* const) bytes, strlen(bytes));
 }
