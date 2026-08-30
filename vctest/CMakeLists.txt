@@ -1,8 +1,8 @@
-add_executable(execvctest
-    execvctest.c
-)
 add_library(vctest
     lib/vctest.c
+)
+add_executable(execvctest
+    execvctest.c
 )
 target_include_directories(vctest
     PUBLIC

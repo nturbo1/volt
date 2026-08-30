@@ -28,8 +28,8 @@ MapBucketEntry;
 
 typedef struct
 {
-    MapBucketEntry* bucket;
-    U64 bucketSize;
+    MapBucketEntry* buckets;
+    U64 bucketsSize;
     U64 size;
 }
 HMap;
@@ -45,7 +45,7 @@ void del_hmap(HMap* hm);
 void hmap_put(HMap* const hm,
               const U8* const key,
               const U64 keySize,
-              U8* val,
+              const U8* const val,
               const U64 valSize);
 
 MapElem* hmap_get(const HMap* const hm, const U8* const key, const U64 keySize);

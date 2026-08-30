@@ -36,4 +36,10 @@ typedef bool Bool;
 #define U32_MIN UINT32_MIN
 #define U64_MIN UINT64_MIN
 
+bool bytesEqual(const U8* const bytes1, const U8* const bytes2, const U64 bytesSize);
+U8* copyBytesToNew(const U8* const bytes, const U64 size);
+
+#define NULL_POINTER_ERROR_MSG_FORMAT "NULL %s pointer was passed!"
+#define FAILED_TO_ALLOC_MEM_FOR_FORMAT "Failed to allocate memory for %s."
+
 #endif // BASE_H
