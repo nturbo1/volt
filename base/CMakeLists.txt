@@ -19,6 +19,7 @@ target_sources(execvctest
     PRIVATE
     vlt_hashmap_test.c
     vlt_vector_test.c
+    vlt_string_test.c
 )
 target_link_libraries(execvctest
     PRIVATE
