@@ -89,7 +89,8 @@ TEST(whenNewString_thenNonNullPointerToStringMustBeReturned,
         VCTEST_ASSERT_TRUE(s != NULL);
         VCTEST_ASSERT_TRUE(s->bytes != NULL);
         VCTEST_ASSERT_TRUE(s->len == len);
-        VCTEST_ASSERT_TRUE( bytesEqual(s->bytes, bytes, len) ); // check the string bytes are copied
+        VCTEST_ASSERT_TRUE( bytesEqual(s->bytes, bytes, len) );
+        VCTEST_ASSERT_TRUE(s->bytes != bytes); // check the string bytes are copied
 
         // CLEAN-UP
         del_string(s);
