@@ -12,6 +12,9 @@ TEST(whenNewStringBuilder_thenReturnPointerToNewStringBuilderObjWithCorrectPrope
     VCTEST_ASSERT_TRUE(sb != NULL);
     VCTEST_ASSERT_TRUE(sb->buf != NULL);
     VCTEST_ASSERT_TRUE(sb->len == 0);
+
+    // CLEAN-UP
+    del_stringBuilder(sb);
 }
 
 TEST(whenAppendChar_thenAppendCharToGivenStringBuilderAndUpdateProperly,
@@ -40,4 +43,7 @@ TEST(whenAppendChar_thenAppendCharToGivenStringBuilderAndUpdateProperly,
         VCTEST_ASSERT_TRUE(sb->buf[sbLen] == inputChars[i]);
         VCTEST_ASSERT_TRUE(sb->len == (++sbLen));
     }
+
+    // CLEAN-UP
+    del_stringBuilder(sb);
 }
