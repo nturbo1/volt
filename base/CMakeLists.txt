@@ -1,8 +1,9 @@
 add_library(volt_c_base
+    base.c
     vlt_string.c
     vlt_vector.c
     vlt_hashmap.c
-    base.c
+    vlt_stringBuilder.c
 )
 target_include_directories(volt_c_base
     PUBLIC
@@ -20,6 +21,7 @@ target_sources(execvctest
     vlt_hashmap_test.c
     vlt_vector_test.c
     vlt_string_test.c
+    vlt_stringBuilder_test.c
 )
 target_link_libraries(execvctest
     PRIVATE
