@@ -28,7 +28,7 @@ String* new_stringFromLit(const char* bytes)
     return new_string((const U8* const) bytes, strlen(bytes));
 }
 
-String* stringCopy(String* source, U64 startIdx, U64 endIdx)
+String* stringCopy(const String* const source, const U64 startIdx, const U64 endIdx)
 {
     ASSERT((source == NULL || source->len == 0) && startIdx > 0,
            "Start index can't be >0 while the source string is NULL or has 0 length.");

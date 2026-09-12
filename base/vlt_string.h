@@ -24,7 +24,7 @@ String* new_stringFromLit(const char* bytes);
 // `endIdx`.
 //
 // If `source` is NULL, then returns NULL.
-String* stringCopy(String* source, U64 startIdx, U64 endIdx);
+String* stringCopy(const String* const source, const U64 startIdx, const U64 endIdx);
 
 // Deletes a given String object.
 // It's the programmer's responsibility to set the string parameter
