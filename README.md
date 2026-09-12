@@ -1,4 +1,4 @@
 # VOLT - Versatile Optimizing Language Toolchain
 
 ## TODO
-- Add more tests for `SStringBuilder` functions
+- Add tests for newly added string functions in `base/vlt_string.h`
