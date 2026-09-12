@@ -4,6 +4,7 @@ add_library(volt_c_base
     vlt_vector.c
     vlt_hashmap.c
     vlt_stringBuilder.c
+    vlt_files.c
 )
 target_include_directories(volt_c_base
     PUBLIC

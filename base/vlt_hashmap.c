@@ -141,21 +141,9 @@ void hmap_del(HMap* const hm, const U8* const key, const U64 keySize)
 // ================================ STATIC/PRIVATE/INTERNAL ================================
 // =========================================================================================
 
-// Parameters for FNV Hash algorithms
-#define FNV_OFFSET 14695981039346656037UL
-#define FNV_PRIME 1099511628211UL
-
 // Uses FNV-1a hash algorithm
 static U64 hash(const U8* const key, const U64 keySize) {
-    U64 hashval = FNV_OFFSET;
-
-    for (U64 i = 0; i < keySize; i++)
-    {
-        hashval ^= (U64)(U8) key[i];
-        hashval *= FNV_PRIME;
-    }
-
-    return hashval;
+    return hash_FNV_1a(key, keySize);
 }
 
 static void hmap_delBucketEntryElems(MapBucketEntry* mbe)
