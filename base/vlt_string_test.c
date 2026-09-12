@@ -90,7 +90,8 @@ TEST(whenNewString_thenNonNullPointerToStringMustBeReturned,
         // THEN
         VCTEST_ASSERT_TRUE(s != NULL);
         VCTEST_ASSERT_TRUE(s->bytes != NULL);
-        VCTEST_ASSERT_TRUE(s->len == len);
+        VCTEST_ASSERT_TRUE(s->len == len - 1); // s->len shouldn't count the NULL-terminator
+        VCTEST_ASSERT_TRUE(s->bytes[s->len] == 0); // a String obj bytes MUST be NULL-terminated
         VCTEST_ASSERT_TRUE( bytesEqual(s->bytes, bytes, len) );
         VCTEST_ASSERT_TRUE(s->bytes != bytes); // check the string bytes are copied
 
@@ -105,9 +106,9 @@ TEST(whenNewString_thenNonNullPointerToStringMustBeReturned,
         // GIVEN
         const U8* const bytes = inputsNullTerminated[i].strBytes;
         const U64 len = inputsNullTerminated[i].strBytesLen - 1; // excluding the NULL-terminator,
-                                                                    // simulating the cases where
-                                                                    // `strlen` is used to get the
-                                                                    // length
+                                                                 // simulating the cases where
+                                                                 // `strlen` is used to get the
+                                                                 // length
 
         // WHEN
         String* s = new_string(bytes, len);
@@ -115,7 +116,8 @@ TEST(whenNewString_thenNonNullPointerToStringMustBeReturned,
         // THEN
         VCTEST_ASSERT_TRUE(s != NULL);
         VCTEST_ASSERT_TRUE(s->bytes != NULL);
-        VCTEST_ASSERT_TRUE(s->len == len + 1);
+        VCTEST_ASSERT_TRUE(s->len == len);
+        VCTEST_ASSERT_TRUE(s->bytes[s->len] == 0); // a String obj bytes MUST be NULL-terminated
         VCTEST_ASSERT_TRUE( bytesEqual(s->bytes, bytes, len) );
         VCTEST_ASSERT_TRUE(s->bytes != bytes); // check the string bytes are copied
 
@@ -152,7 +154,8 @@ TEST(whenNewStringFromLit_thenNonNullPointerToStringMustBeReturned,
         // THEN
         VCTEST_ASSERT_TRUE(s != NULL);
         VCTEST_ASSERT_TRUE(s->bytes != NULL);
-        VCTEST_ASSERT_TRUE(s->len == len + 1);
+        VCTEST_ASSERT_TRUE(s->len == len);
+        VCTEST_ASSERT_TRUE(s->bytes[s->len] == 0); // a String obj bytes MUST be NULL-terminated
         VCTEST_ASSERT_TRUE( bytesEqual(s->bytes, (const U8* const) lit, len) );
         VCTEST_ASSERT_TRUE( s->bytes != (U8*) lit ); // check the string bytes are copied
 

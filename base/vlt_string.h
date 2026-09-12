@@ -9,11 +9,16 @@
 typedef struct
 {
     const U8* bytes; // NULL-terminated
-    U64 len;
+    U64 len; // doesn't count the NULL-terminator
 }
 String;
 
 // Creates a new String object and returns a pointer to it.
+// 
+// If given bytes are not NULL-terminated, then it appends a
+// NULL-terminator to the bytes of a newly created `String` obj.
+// However `len` of a newly created `String` obj doesn't count
+// the NULL-terminator.
 String* new_string(const U8* const bytes, const U64 len);
 
 // Creates a new String object from a string literal.
