@@ -3,10 +3,11 @@
 
 #include "base_inc.h"
 
-typedef enum Token
+typedef enum EToken
 {
     eTokenBegin,
 
+    ETOKEN_NO_VALUE, // meaning no token has been scanned or just absence of token
     ETOKEN_ILLEGAL,
 	ETOKEN_EOF,
 	ETOKEN_COMMENT,
@@ -161,5 +162,14 @@ typedef enum Token
     eTokenEnd
 }
 EToken;
+
+typedef struct SToken
+{
+    U64 col;
+    U64 ln;
+    String* lexeme;
+    EToken type;
+}
+SToken;
 
 #endif // FRONTEND_C_TOKEN_H

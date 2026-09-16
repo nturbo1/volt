@@ -7,12 +7,31 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+// ===============================================================================
+// ================================== SScanSrc ===================================
+// ===============================================================================
+static SScanSrc* initScanSrc(const String* const filepath);
+static void delScanSrc(SScanSrc* src);
+static void fillScanSrcBuf(SScanSrc* src);
+static U8 next(SScanSrc* src);
+static U8 peek(SScanSrc* src);
+
+// ===============================================================================
+// ================================== SScanner ===================================
+// ===============================================================================
+static void setTokType(SScanner* s, EToken type);
+static void setTokLexeme(SScanner* s, String* lexeme);
+static inline void setTok(SToken* tok,
+                          const U64 col,
+                          const U64 ln,
+                          String* lexeme,
+                          EToken type);
+
 static EToken scanIdentifier(SScanner* s);
 // static EToken scanInt(SScanner* s);
 // static EToken scanFloat(SScanner* s);
 static EToken scanNumber(SScanner* s);
 
-static void fillBuf(SScanner* s);
 static bool isWhitespace(const U8 ch);
 static bool isAlpha(const U8 ch);
 // static bool isAlnum(const U8 ch);
@@ -29,21 +48,16 @@ static void initKeywordsMap();
 // HMap<String*, EToken>
 static HMap* keywords = NULL;
 
-SScanner* new_scanner(String* filepath)
+SScanner* new_scanner(const String* const filepath)
 {
-    FILE* srcFile = fopen((const char*) filepath->bytes, "r");
-    ASSERT(srcFile != NULL, "Failed to open file %s\n", (const char*) filepath->bytes);
+    SScanSrc* src = initScanSrc(filepath);
     SScanner* s = (SScanner*) malloc(sizeof(SScanner));
     ASSERT(s != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SScanner");
-    s->file = srcFile;
-    srcFile = NULL;
+    s->src = src;
+    src = NULL;
     s->filepath = new_string(filepath->bytes, filepath->len);
-    s->bufEnd = SCANNER_BUFFER_SIZE;
-    s->nextChIdx = 0;
-    s->lnOffs = s->colOffs = s->tokLn = s->tokCol = 0;
-    s->tokLexeme = NULL;
-    fillBuf(s);
-    s->tok = nextTok(s); // may update SScanner obj, s
+    s->lnOffs = s->colOffs = 0;
+    setTok(&(s->tok), 0, 0, NULL, ETOKEN_NO_VALUE);
 
     initKeywordsMap();
 
@@ -53,17 +67,12 @@ SScanner* new_scanner(String* filepath)
 EToken nextTok(SScanner* s)
 {
     ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    s->tokLexeme = NULL;
-    s->tok = ETOKEN_ILLEGAL;
-
     skipWhitespace(s);
-    s->tokLn = s->lnOffs + 1;
-    s->tokCol = s->colOffs + 1;
-    U8 ch = peek(s);
+    setTok(&(s->tok), s->colOffs + 1, s->lnOffs + 1, NULL, ETOKEN_ILLEGAL);
+    U8 ch = peekChar(s);
     if ((char) ch == EOF)
     {
-        s->tokLexeme = NULL;
-        s->tok = ETOKEN_EOF;
+        setTokType(s, ETOKEN_EOF);
         return ETOKEN_EOF;
     }
 
@@ -77,53 +86,51 @@ EToken nextTok(SScanner* s)
     }
     else
     {
-        s->tokLexeme = NULL;
         switch(ch)
         {
         case '(':
-	        next(s); s->tok = ETOKEN_LPAREN; return ETOKEN_LPAREN;
+	        nextChar(s); setTokType(s, ETOKEN_LPAREN); return s->tok.type;
         case '[':
-	        next(s); s->tok = ETOKEN_LBRACK; return ETOKEN_LBRACK;
+	        nextChar(s); setTokType(s, ETOKEN_LBRACK); return s->tok.type;
         case '{':
-	        next(s); s->tok = ETOKEN_LBRACE; return ETOKEN_LBRACE;
+	        nextChar(s); setTokType(s, ETOKEN_LBRACE); return s->tok.type;
         case ')':
-	        next(s); s->tok = ETOKEN_RPAREN; return ETOKEN_RPAREN;
+	        nextChar(s); setTokType(s, ETOKEN_RPAREN); return s->tok.type;
         case ']':
-	        next(s); s->tok = ETOKEN_RBRACK; return ETOKEN_RBRACK;
+	        nextChar(s); setTokType(s, ETOKEN_RBRACK); return s->tok.type;
         case '}':
-	        next(s); s->tok = ETOKEN_RBRACE; return ETOKEN_RBRACE;
+	        nextChar(s); setTokType(s, ETOKEN_RBRACE); return s->tok.type;
 	    case ',':
-            next(s); s->tok = ETOKEN_COMMA; return ETOKEN_COMMA;
+            nextChar(s); setTokType(s, ETOKEN_COMMA); return s->tok.type;
 	    case '.':
             {
-                next(s);
-                ch = peek(s);
+                nextChar(s);
+                ch = peekChar(s);
                 if (ch == '.')
                 {
-                    next(s);
-                    ch = peek(s);
+                    nextChar(s);
+                    ch = peekChar(s);
                     if (ch == '.')
                     {
-                        next(s);
-                        s->tok = ETOKEN_ELLIPSIS;
-                        return ETOKEN_ELLIPSIS;
+                        nextChar(s);
+                        setTokType(s, ETOKEN_ELLIPSIS); return s->tok.type;
                     }
                     else
                     {
-                        s->tok = ETOKEN_ILLEGAL;
-                        s->tokLexeme = new_stringFromLit("..");
-                        return ETOKEN_ILLEGAL;
+                        setTokType(s, ETOKEN_ILLEGAL);
+                        setTokLexeme(s, new_stringFromLit(".."));
+                        return s->tok.type;
                     }
                 }
-                s->tok = ETOKEN_PERIOD;
-                return ETOKEN_PERIOD;
+                setTokType(s, ETOKEN_PERIOD);
+                return s->tok.type;
             }
 	    case ':':
-            next(s); s->tok = ETOKEN_COLON; return ETOKEN_COLON;
+            nextChar(s); setTokType(s, ETOKEN_COLON); return s->tok.type;
 	    case ';':
-            next(s); s->tok = ETOKEN_SEMICOLON; return ETOKEN_SEMICOLON;
+            nextChar(s); setTokType(s, ETOKEN_SEMICOLON); return s->tok.type;
         default:
-            s->tok = ETOKEN_ILLEGAL; return ETOKEN_ILLEGAL;
+            setTokType(s, ETOKEN_ILLEGAL); return s->tok.type;
         }
     }
 }
@@ -131,27 +138,23 @@ EToken nextTok(SScanner* s)
 EToken peekTok(SScanner* s)
 {
     ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    return s->tok;
+    return s->tok.type;
 }
 
-U8 next(SScanner* s)
+U8 nextChar(SScanner* s)
 {
     ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    const U8 ch = s->buf[s->nextChIdx];
+    U8 ch = next(s->src);
 
-    if ((char) ch != EOF) {
-        s->nextChIdx = ((s->nextChIdx + 1) % (2 * SCANNER_BUFFER_SIZE));
-
-        // next is the beginning of one of the buffers
-        if (s->nextChIdx % SCANNER_BUFFER_SIZE == 0) { 
-            fillBuf(s);
-            s->bufEnd = ((s->nextChIdx + SCANNER_BUFFER_SIZE) % (2 * SCANNER_BUFFER_SIZE));
-        }
-
-        if (ch == '\n') {
+    if ((char) ch != EOF)
+    {
+        if ((char) ch == '\n')
+        {
             s->lnOffs++;
             s->colOffs = 0;
-        } else {
+        }
+        else
+        {
             s->colOffs++;
         }
     }
@@ -159,25 +162,21 @@ U8 next(SScanner* s)
     return ch;
 }
 
-U8 peek(SScanner* s)
+U8 peekChar(SScanner* s)
 {
     ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    return s->buf[s->nextChIdx];
+    return peek(s->src);
 }
 
 void del_scanner(SScanner* s)
 {
-    if (s->file != NULL)
-        fclose(s->file);
-
-    del_string(s->filepath);
-    s->filepath = NULL;
-    del_string(s->tokLexeme);
-    s->tokLexeme = NULL;
-
-    del_hmap(keywords);
-
-    free(s);
+    if (s)
+    {
+        delScanSrc(s->src);
+        del_string(s->filepath);
+        del_hmap(keywords);
+        free(s);
+    }
 }
 
 static EToken scanIdentifier(SScanner* s)
@@ -192,23 +191,6 @@ static EToken scanNumber(SScanner* s)
     ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
     // TODO
     return 0;
-}
-
-// Fills the current buffer that the scanner is currently processing
-// with the next chunk of bytes from the src file.
-static void fillBuf(SScanner* s)
-{
-    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    U8* buf = s->buf + s->nextChIdx;
-    fflush(stdout);
-    U64 n = (U64) fread(buf,
-                     sizeof(U8),
-                     SCANNER_BUFFER_SIZE,
-                     s->file);
-
-    if (feof(s->file)) {
-        buf[n] = EOF;
-    }
 }
 
 static bool isWhitespace(const U8 ch)
@@ -234,11 +216,11 @@ static bool isDecDigit(const U8 ch)
 static void skipWhitespace(SScanner* s)
 {
     ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    U8 ch = peek(s);
+    U8 ch = peekChar(s);
     while (isWhitespace(ch))
     {
-        next(s); // skip whitespace
-        ch = peek(s);
+        nextChar(s); // skip whitespace
+        ch = peekChar(s);
     }
 }
 
@@ -310,3 +292,102 @@ static void initKeywordsMap()
     }
 }
 
+static inline void setTok(SToken* tok,
+                          const U64 col,
+                          const U64 ln,
+                          String* lexeme,
+                          EToken type)
+{
+    ASSERT(tok != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SToken");
+    tok->col = col;
+    tok->ln = ln;
+    tok->lexeme = lexeme;
+    tok->type = type;
+}
+
+static void setTokType(SScanner* s, EToken type)
+{
+    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    SToken* tok = &(s->tok);
+    setTok(tok, tok->col, tok->ln, tok->lexeme, type);
+}
+
+static void setTokLexeme(SScanner* s, String* lexeme)
+{
+    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    SToken* tok = &(s->tok);
+    setTok(tok, tok->col, tok->ln, lexeme, tok->type);
+}
+
+// ===============================================================================
+// ================================== SScanSrc ===================================
+// ===============================================================================
+
+static U8 next(SScanSrc* src)
+{
+    ASSERT(src != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanSrc");
+    const U8 ch = src->buf[src->next];
+
+    if ((char) ch != EOF) {
+        src->next = ((src->next + 1) % (2 * SCANNER_BUFFER_SIZE));
+
+        // if next is the beginning of one of the buffers
+        if (src->next % SCANNER_BUFFER_SIZE == 0) { 
+            fillScanSrcBuf(src);
+            src->bufEnd = ( (src->next + SCANNER_BUFFER_SIZE) %
+                            (2 * SCANNER_BUFFER_SIZE) );
+        }
+    }
+
+    return ch;
+}
+
+static U8 peek(SScanSrc* src)
+{
+    ASSERT(src != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanSrc");
+    return src->buf[src->next];
+}
+
+static SScanSrc* initScanSrc(const String* const filepath)
+{
+    FILE* srcFile = fopen((const char*) filepath->bytes, "r");
+    ASSERT(srcFile != NULL,
+           "Failed to open file %s\n", (const char*) filepath->bytes);
+    SScanSrc* src = (SScanSrc*) malloc(sizeof(SScanSrc));
+    ASSERT(src != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SScanSrc");
+    src->file = srcFile;
+    srcFile = NULL;
+    src->bufEnd = SCANNER_BUFFER_SIZE;
+    src->next = 0;
+    fillScanSrcBuf(src);
+
+    return src;
+}
+
+static void delScanSrc(SScanSrc* src)
+{
+    if (src)
+    {
+        if (src->file)
+            fclose(src->file);
+        src->file = NULL;
+        free(src);
+    }
+}
+
+// Fills the current buffer that the scanner is currently processing
+// with the next chunk of bytes from the src file.
+static void fillScanSrcBuf(SScanSrc* src)
+{
+    ASSERT(src != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanSrc");
+    U8* buf = src->buf + src->next;
+    fflush(stdout);
+    U64 n = (U64) fread(buf,
+                     sizeof(U8),
+                     SCANNER_BUFFER_SIZE,
+                     src->file);
+
+    if (feof(src->file)) {
+        buf[n] = EOF;
+    }
+}
