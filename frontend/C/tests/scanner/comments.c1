@@ -1,0 +1,6 @@
+// a simple single line comment
+// another simple single line comment
+                       // a single line comment preceded by whitespace
+/* a simple multi-line comment */
+/* another simple multi-line comment */
+             /* a multi-line comment preceded by whitespace */

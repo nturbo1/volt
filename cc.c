@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
     ASSERT(filepath != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
     SScanner* scanner = new_scanner(filepath);
     ASSERT(scanner != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SScanner object");
-    printf("tok = %d\n", scanner->tok.type);
+    printf("tok = %d\n", scanner->tok.base.type);
 
     return 0;
 }

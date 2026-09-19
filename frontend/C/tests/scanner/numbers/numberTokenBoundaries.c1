@@ -1,0 +1,38 @@
+/* ------------------------------------------------------------
+ * NUMBER TOKEN BOUNDARIES
+ *
+ * These are particularly important for a lexer because the
+ * following token may immediately follow the number.
+ * ------------------------------------------------------------ */
+
+1+
+1-
+1*
+1/
+1%
+1=
+1<
+1>
+1&
+1|
+1!
+1;
+1,
+1)
+1]
+1}
+
+123abc
+123_abc
+
+1.0abc
+1.0_abc
+
+1e10abc
+1e10_abc
+
+0xFFabc
+0xFF_abc
+
+0x1p10abc
+0x1p10_abc

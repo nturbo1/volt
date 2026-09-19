@@ -8,7 +8,7 @@ typedef enum EToken
     eTokenBegin,
 
     ETOKEN_NO_VALUE, // meaning no token has been scanned or just absence of token
-    ETOKEN_ILLEGAL,
+    ETOKEN_INVALID_IDENT,
 	ETOKEN_EOF,
 	ETOKEN_COMMENT,
 
@@ -167,9 +167,38 @@ typedef struct SToken
 {
     U64 col;
     U64 ln;
-    String* lexeme;
-    EToken type;
+    EToken type; // also the indicator of the underlying data type
+                 // that inherits from SToken
 }
 SToken;
+
+typedef struct STokenIdent
+{
+    SToken tok;
+    String* lexeme;
+}
+STokenIdent;
+
+typedef struct STokenNum
+{
+    SToken tok;
+    U64 val;
+}
+STokenNum;
+
+typedef union UToken
+{
+    SToken base; // base.type is the indicator of the underlying data type
+    STokenIdent ident;
+    STokenNum number;
+}
+UToken;
+
+SToken* new_tok(const U64 col, const U64 ln, const EToken type);
+STokenIdent* new_tokIdent(const U64 col, const U64 ln, const EToken type, String* const lexeme);
+STokenNum* new_tokNum(const U64 col, const U64 ln, const EToken type, const U64 val);
+void del_tok(SToken* tok);
+void del_tokIdent(STokenIdent* tok);
+void del_tokNum(STokenNum* tok);
 
 #endif // FRONTEND_C_TOKEN_H

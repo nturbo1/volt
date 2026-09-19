@@ -1,5 +1,7 @@
 add_library(c_frontend
     scanner.c
+    token.c
+    error.c
 )
 target_link_libraries(c_frontend
     PUBLIC

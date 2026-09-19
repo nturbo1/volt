@@ -7,6 +7,16 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+///////////////////////////////////////////////////////////////////////////////////
+// HMap<String, EToken>
+///////////////////////////////////////////////////////////////////////////////////
+// static EToken hmapStringToEToken_get(HMap* const hm, String* key);
+static void hmapStringToEToken_put(HMap* const hm, String* key, EToken val);
+static void initKeywordsMap();
+
+// HMap<String*, EToken>
+static HMap* keywords = NULL;
+
 // ===============================================================================
 // ================================== SScanSrc ===================================
 // ===============================================================================
@@ -19,13 +29,18 @@ static U8 peek(SScanSrc* src);
 // ===============================================================================
 // ================================== SScanner ===================================
 // ===============================================================================
-static void setTokType(SScanner* s, EToken type);
-static void setTokLexeme(SScanner* s, String* lexeme);
-static inline void setTok(SToken* tok,
-                          const U64 col,
-                          const U64 ln,
-                          String* lexeme,
-                          EToken type);
+static inline void setTokBase(UToken* tok, const U64 col, const U64 ln, EToken type);
+// static void setTokNumber(UToken* tok,
+//                          const U64 col,
+//                          const U64 ln,
+//                          EToken type,
+//                          const U64 val);
+
+static inline void setTokIdent(UToken* tok,
+                               const U64 col,
+                               const U64 ln,
+                               EToken type,
+                               String* lexeme);
 
 static EToken scanIdentifier(SScanner* s);
 // static EToken scanInt(SScanner* s);
@@ -38,16 +53,6 @@ static bool isAlpha(const U8 ch);
 static bool isDecDigit(const U8 ch);
 static void skipWhitespace(SScanner* s);
 
-///////////////////////////////////////////////////////////////////////////////////
-// HMap<String, EToken>
-///////////////////////////////////////////////////////////////////////////////////
-// static EToken hmapStringToEToken_get(HMap* const hm, String* key);
-static void hmapStringToEToken_put(HMap* const hm, String* key, EToken val);
-static void initKeywordsMap();
-
-// HMap<String*, EToken>
-static HMap* keywords = NULL;
-
 SScanner* new_scanner(const String* const filepath)
 {
     SScanSrc* src = initScanSrc(filepath);
@@ -57,7 +62,8 @@ SScanner* new_scanner(const String* const filepath)
     src = NULL;
     s->filepath = new_string(filepath->bytes, filepath->len);
     s->lnOffs = s->colOffs = 0;
-    setTok(&(s->tok), 0, 0, NULL, ETOKEN_NO_VALUE);
+    setTokBase(&(s->tok), 0, 0, ETOKEN_NO_VALUE);
+    s->err = EERROR_TYPE_NO_ERROR;
 
     initKeywordsMap();
 
@@ -68,19 +74,16 @@ EToken nextTok(SScanner* s)
 {
     ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
     skipWhitespace(s);
-    setTok(&(s->tok), s->colOffs + 1, s->lnOffs + 1, NULL, ETOKEN_ILLEGAL);
+    const U64 tokCol = s->colOffs + 1;
+    const U64 tokLn = s->lnOffs + 1;
     U8 ch = peekChar(s);
     if ((char) ch == EOF)
     {
-        setTokType(s, ETOKEN_EOF);
+        setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_EOF);
         return ETOKEN_EOF;
     }
 
-    if (isAlpha(ch))
-    {
-        return scanIdentifier(s);
-    }
-    else if(isDecDigit(ch))
+    if(isDecDigit(ch))
     {
         return scanNumber(s);
     }
@@ -89,19 +92,40 @@ EToken nextTok(SScanner* s)
         switch(ch)
         {
         case '(':
-	        nextChar(s); setTokType(s, ETOKEN_LPAREN); return s->tok.type;
+	        nextChar(s);
+            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_LPAREN);
+            return ETOKEN_LPAREN;
+
         case '[':
-	        nextChar(s); setTokType(s, ETOKEN_LBRACK); return s->tok.type;
+	        nextChar(s);
+            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_LBRACK);
+            return ETOKEN_LBRACK;
+
         case '{':
-	        nextChar(s); setTokType(s, ETOKEN_LBRACE); return s->tok.type;
+	        nextChar(s);
+            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_LBRACE);
+            return ETOKEN_LBRACE;
+
         case ')':
-	        nextChar(s); setTokType(s, ETOKEN_RPAREN); return s->tok.type;
+	        nextChar(s);
+            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_RPAREN);
+            return ETOKEN_RPAREN;
+
         case ']':
-	        nextChar(s); setTokType(s, ETOKEN_RBRACK); return s->tok.type;
+	        nextChar(s);
+            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_RBRACK);
+            return ETOKEN_RBRACK;
+
         case '}':
-	        nextChar(s); setTokType(s, ETOKEN_RBRACE); return s->tok.type;
+	        nextChar(s);
+            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_RBRACE);
+            return ETOKEN_RBRACE;
+
 	    case ',':
-            nextChar(s); setTokType(s, ETOKEN_COMMA); return s->tok.type;
+            nextChar(s);
+            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_COMMA);
+            return ETOKEN_COMMA;
+
 	    case '.':
             {
                 nextChar(s);
@@ -113,24 +137,31 @@ EToken nextTok(SScanner* s)
                     if (ch == '.')
                     {
                         nextChar(s);
-                        setTokType(s, ETOKEN_ELLIPSIS); return s->tok.type;
+                        setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_ELLIPSIS);
+                        return ETOKEN_ELLIPSIS;
                     }
                     else
                     {
-                        setTokType(s, ETOKEN_ILLEGAL);
-                        setTokLexeme(s, new_stringFromLit(".."));
-                        return s->tok.type;
+                        setTokIdent(&(s->tok), tokCol, tokLn, ETOKEN_INVALID_IDENT, new_stringFromLit(".."));
+                        return ETOKEN_INVALID_IDENT;
                     }
                 }
-                setTokType(s, ETOKEN_PERIOD);
-                return s->tok.type;
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_PERIOD);
+                return ETOKEN_PERIOD;
             }
+
 	    case ':':
-            nextChar(s); setTokType(s, ETOKEN_COLON); return s->tok.type;
+            nextChar(s);
+            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_COLON);
+            return ETOKEN_COLON;
+
 	    case ';':
-            nextChar(s); setTokType(s, ETOKEN_SEMICOLON); return s->tok.type;
+            nextChar(s);
+            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_SEMICOLON);
+            return ETOKEN_SEMICOLON;
+
         default:
-            setTokType(s, ETOKEN_ILLEGAL); return s->tok.type;
+            return scanIdentifier(s);
         }
     }
 }
@@ -138,7 +169,7 @@ EToken nextTok(SScanner* s)
 EToken peekTok(SScanner* s)
 {
     ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    return s->tok.type;
+    return s->tok.base.type;
 }
 
 U8 nextChar(SScanner* s)
@@ -182,6 +213,8 @@ void del_scanner(SScanner* s)
 static EToken scanIdentifier(SScanner* s)
 {
     ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    U8 ch = peekChar(s);
+    isAlpha(ch);
     // TODO
     return 0;
 }
@@ -222,29 +255,6 @@ static void skipWhitespace(SScanner* s)
         nextChar(s); // skip whitespace
         ch = peekChar(s);
     }
-}
-
-///////////////////////////////////////////////////////////////////////////////////
-// HMap<String, EToken>
-///////////////////////////////////////////////////////////////////////////////////
-
-// static EToken hmapStringToEToken_get(HMap* const hm, String* key)
-// {
-//     ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
-//     MapElem* elem = hmap_get(hm, key->bytes, key->len);
-//     if (elem != NULL)
-//     {
-//         ASSERT_DBG(elem->valSize == sizeof(EToken), "HMap element value size doesn't match EToken size.");
-//         return *(EToken*)(elem->val);
-//     }
-//
-//     return eTokenEnd;
-// }
-
-static void hmapStringToEToken_put(HMap* const hm, String* key, EToken val)
-{
-    ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
-    hmap_put(hm, key->bytes, key->len, (U8*) &val, sizeof(EToken));
 }
 
 static void initKeywordsMap()
@@ -292,32 +302,33 @@ static void initKeywordsMap()
     }
 }
 
-static inline void setTok(SToken* tok,
-                          const U64 col,
-                          const U64 ln,
-                          String* lexeme,
-                          EToken type)
+static inline void setTokBase(UToken* tok, const U64 col, const U64 ln, EToken type)
 {
-    ASSERT(tok != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SToken");
-    tok->col = col;
-    tok->ln = ln;
-    tok->lexeme = lexeme;
-    tok->type = type;
+    ASSERT(tok != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "UToken");
+    tok->base.col = col;
+    tok->base.ln = ln;
+    tok->base.type = type;
 }
 
-static void setTokType(SScanner* s, EToken type)
+static inline void setTokIdent(UToken* tok,
+                               const U64 col,
+                               const U64 ln,
+                               EToken type,
+                               String* lexeme)
 {
-    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    SToken* tok = &(s->tok);
-    setTok(tok, tok->col, tok->ln, tok->lexeme, type);
+    setTokBase(tok, col, ln, type);
+    tok->ident.lexeme = lexeme;
 }
 
-static void setTokLexeme(SScanner* s, String* lexeme)
-{
-    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    SToken* tok = &(s->tok);
-    setTok(tok, tok->col, tok->ln, lexeme, tok->type);
-}
+// static void setTokNumber(UToken* tok,
+//                       const U64 col,
+//                       const U64 ln,
+//                       EToken type,
+//                       const U64 val)
+// {
+//     setTokBase(tok, col, ln, type);
+//     tok->number.val = val;
+// }
 
 // ===============================================================================
 // ================================== SScanSrc ===================================
@@ -391,3 +402,26 @@ static void fillScanSrcBuf(SScanSrc* src)
         buf[n] = EOF;
     }
 }
+
+///////////////////////////////////////////////////////////////////////////////////
+// HMap<String, EToken>
+///////////////////////////////////////////////////////////////////////////////////
+
+static void hmapStringToEToken_put(HMap* const hm, String* key, EToken val)
+{
+    ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
+    hmap_put(hm, key->bytes, key->len, (U8*) &val, sizeof(EToken));
+}
+
+// static EToken hmapStringToEToken_get(HMap* const hm, String* key)
+// {
+//     ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
+//     MapElem* elem = hmap_get(hm, key->bytes, key->len);
+//     if (elem != NULL)
+//     {
+//         ASSERT_DBG(elem->valSize == sizeof(EToken), "HMap element value size doesn't match EToken size.");
+//         return *(EToken*)(elem->val);
+//     }
+//
+//     return eTokenEnd;
+// }

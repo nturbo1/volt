@@ -3,6 +3,7 @@
 
 #include "base_inc.h"
 #include "token.h"
+#include "error.h"
 
 typedef struct ScanSrc SScanSrc;
 typedef struct SScanner
@@ -11,7 +12,8 @@ typedef struct SScanner
     String* filepath; // src filepath
     U64 lnOffs;     // line offset in the src file
     U64 colOffs;    // column offset in the src file
-    SToken tok;
+    UToken tok;
+    EErrorType err;
 }
 SScanner;
 
@@ -36,7 +38,5 @@ struct ScanSrc
     U64 next;  // the next character index in the src buffer
     U8 buf[2 * SCANNER_BUFFER_SIZE]; // the src buffer
 };
-
-
 
 #endif // FRONTEND_C_SCANNER_H
