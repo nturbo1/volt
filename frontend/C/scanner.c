@@ -12,6 +12,7 @@
 ///////////////////////////////////////////////////////////////////////////////////
 // static EToken hmapStringToEToken_get(HMap* const hm, String* key);
 static void hmapStringToEToken_put(HMap* const hm, String* key, EToken val);
+static EToken hmapStringToEToken_get(HMap* const hm, String* key);
 static void initKeywordsMap();
 
 // HMap<String*, EToken>
@@ -49,7 +50,7 @@ static EToken scanNumber(SScanner* s);
 
 static bool isWhitespace(const U8 ch);
 static bool isAlpha(const U8 ch);
-// static bool isAlnum(const U8 ch);
+static bool isAlnum(const U8 ch);
 static bool isDecDigit(const U8 ch);
 static void skipWhitespace(SScanner* s);
 
@@ -213,10 +214,33 @@ void del_scanner(SScanner* s)
 static EToken scanIdentifier(SScanner* s)
 {
     ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    const U64 tokCol = s->colOffs + 1;
+    const U64 tokLn = s->lnOffs + 1;
     U8 ch = peekChar(s);
-    isAlpha(ch);
-    // TODO
-    return 0;
+    if (!isAlpha(ch) && ch != '_')
+    {
+        setTokIdent(&(s->tok), tokCol, tokLn, ETOKEN_INVALID_IDENT, NULL);
+        return ETOKEN_INVALID_IDENT;
+    }
+
+    SStringBuilder* identSb = new_stringBuilder();
+    while (isAlnum(ch) || ch == '_')
+    {
+        sb_appendChar(identSb, nextChar(s));
+        ch = peekChar(s);
+    }
+
+    String* ident = sb_toString(identSb);
+    EToken identTokType = hmapStringToEToken_get(keywords, ident);
+    if(identTokType != eTokenEnd)
+    {
+        setTokBase(&(s->tok), tokCol, tokLn, identTokType);
+        return identTokType;
+    }
+
+    setTokIdent(&(s->tok), tokCol, tokLn, ETOKEN_IDENT, ident);
+    del_stringBuilder(identSb);
+    return s->tok.base.type;
 }
 
 static EToken scanNumber(SScanner* s)
@@ -236,10 +260,10 @@ static bool isAlpha(const U8 ch)
     return ('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z');
 }
 
-// static bool isAlnum(const U8 ch)
-// {
-//     return isAlpha(ch) || isDecDigit(ch);
-// }
+static bool isAlnum(const U8 ch)
+{
+    return isAlpha(ch) || isDecDigit(ch);
+}
 
 static bool isDecDigit(const U8 ch)
 {
@@ -259,7 +283,7 @@ static void skipWhitespace(SScanner* s)
 
 static void initKeywordsMap()
 {
-    if (keywords != NULL)
+    if (keywords == NULL)
     {
         keywords = new_hmap();
         hmapStringToEToken_put(keywords, new_stringFromLit("const"),       ETOKEN_CONST);
@@ -290,9 +314,9 @@ static void initKeywordsMap()
         hmapStringToEToken_put(keywords, new_stringFromLit("auto"),        ETOKEN_AUTO); 
         hmapStringToEToken_put(keywords, new_stringFromLit("inline"),      ETOKEN_INLINE);
         hmapStringToEToken_put(keywords, new_stringFromLit("restrict"),    ETOKEN_RESTRICT);
-        hmapStringToEToken_put(keywords, new_stringFromLit("_complex"),    ETOKEN__COMPLEX);
-        hmapStringToEToken_put(keywords, new_stringFromLit("_imaginary"),  ETOKEN__IMAGINARY);
-        hmapStringToEToken_put(keywords, new_stringFromLit("_bool"),       ETOKEN__BOOL);
+        hmapStringToEToken_put(keywords, new_stringFromLit("_Complex"),    ETOKEN__COMPLEX);
+        hmapStringToEToken_put(keywords, new_stringFromLit("_Imaginary"),  ETOKEN__IMAGINARY);
+        hmapStringToEToken_put(keywords, new_stringFromLit("_Bool"),       ETOKEN__BOOL);
         hmapStringToEToken_put(keywords, new_stringFromLit("char"),        ETOKEN_CHAR);
         hmapStringToEToken_put(keywords, new_stringFromLit("short"),       ETOKEN_SHORT);
         hmapStringToEToken_put(keywords, new_stringFromLit("int"),         ETOKEN_INT);
@@ -413,15 +437,15 @@ static void hmapStringToEToken_put(HMap* const hm, String* key, EToken val)
     hmap_put(hm, key->bytes, key->len, (U8*) &val, sizeof(EToken));
 }
 
-// static EToken hmapStringToEToken_get(HMap* const hm, String* key)
-// {
-//     ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
-//     MapElem* elem = hmap_get(hm, key->bytes, key->len);
-//     if (elem != NULL)
-//     {
-//         ASSERT_DBG(elem->valSize == sizeof(EToken), "HMap element value size doesn't match EToken size.");
-//         return *(EToken*)(elem->val);
-//     }
-//
-//     return eTokenEnd;
-// }
+static EToken hmapStringToEToken_get(HMap* const hm, String* key)
+{
+    ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
+    MapElem* elem = hmap_get(hm, key->bytes, key->len);
+    if (elem != NULL)
+    {
+        ASSERT_DBG(elem->valSize == sizeof(EToken), "HMap element value size doesn't match EToken size.");
+        return *(EToken*)(elem->val);
+    }
+
+    return eTokenEnd;
+}

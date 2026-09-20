@@ -127,7 +127,7 @@ TEST(whenAppendStrLit_thenAppendStrLitToGivenStringBuilderAndUpdateProperly,
 }
 
 TEST(whenToString_thenReturnCorrectString,
-     "When sb_ToString, then return a pointer to a String obj that"
+     "When sb_toString, then return a pointer to a String obj that"
      " contains correct bytes")
 {
     U64 inputsSize = 5;
@@ -149,7 +149,7 @@ TEST(whenToString_thenReturnCorrectString,
         sb_appendString(sb, str);
 
         // WHEN
-        String* sbStr = sb_ToString(sb);
+        String* sbStr = sb_toString(sb);
 
         // THEN
         VCTEST_ASSERT_TRUE(sbStr->len == str->len);

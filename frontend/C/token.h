@@ -5,7 +5,7 @@
 
 typedef enum EToken
 {
-    eTokenBegin,
+    eTokenBeg,
 
     ETOKEN_NO_VALUE, // meaning no token has been scanned or just absence of token
     ETOKEN_INVALID_IDENT,
@@ -117,7 +117,7 @@ typedef enum EToken
 	ETOKEN_SIZEOF,
 	ETOKEN_TYPEDEF,
 	ETOKEN_VOLATILE,
-    ETOKEN_AUTO, 
+    ETOKEN_AUTO,
     ETOKEN_INLINE,          // (C99)
     ETOKEN_RESTRICT,        // (C99)
     ETOKEN__COMPLEX,         // (C99)
@@ -162,6 +162,8 @@ typedef enum EToken
     eTokenEnd
 }
 EToken;
+
+const char* eTokenToCStr(EToken tok);
 
 typedef struct SToken
 {

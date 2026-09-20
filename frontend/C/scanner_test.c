@@ -2,8 +2,6 @@
 #include "vctest.h"
 #include "base_inc.h"
 
-#include <stdio.h>
-
 static 
 
 // typedef struct TokenLexemePair
@@ -31,7 +29,7 @@ TEST(testNewScanner,
     VCTEST_ASSERT_TRUE(testFileDirPath != NULL);
     sb_appendString(sb, testFileDirPath);
     sb_appendStrLit(sb, "tests/scanner/punctuators.c1");
-    String* filepath = sb_ToString(sb);
+    String* filepath = sb_toString(sb);
     VCTEST_ASSERT_TRUE(filepath != NULL);
 
     // WHEN
@@ -93,7 +91,7 @@ TEST(testScanPunctuators,
     VCTEST_ASSERT_TRUE(testFileDirPath != NULL);
     sb_appendString(sb, testFileDirPath);
     sb_appendStrLit(sb, "tests/scanner/punctuators.c1");
-    String* filepath = sb_ToString(sb);
+    String* filepath = sb_toString(sb);
     VCTEST_ASSERT_TRUE(filepath != NULL);
 
     // WHEN
@@ -112,7 +110,6 @@ TEST(testScanPunctuators,
     VCTEST_ASSERT_TRUE(s->tok.base.ln == 0);
     VCTEST_ASSERT_TRUE(s->tok.base.col == 0);
     VCTEST_ASSERT_TRUE(s->tok.base.type == ETOKEN_NO_VALUE);
-    VCTEST_ASSERT_TRUE(s->tok.ident.lexeme == NULL);
 
     for (U64 i = 0; i < tokensSize; i++)
     {
@@ -186,7 +183,7 @@ TEST(testScanKeywords,
     VCTEST_ASSERT_TRUE(testFileDirPath != NULL);
     sb_appendString(sb, testFileDirPath);
     sb_appendStrLit(sb, "tests/scanner/keywords.c1");
-    String* filepath = sb_ToString(sb);
+    String* filepath = sb_toString(sb);
     VCTEST_ASSERT_TRUE(filepath != NULL);
 
     // WHEN
@@ -205,13 +202,16 @@ TEST(testScanKeywords,
     VCTEST_ASSERT_TRUE(s->tok.base.ln == 0);
     VCTEST_ASSERT_TRUE(s->tok.base.col == 0);
     VCTEST_ASSERT_TRUE(s->tok.base.type == ETOKEN_NO_VALUE);
-    VCTEST_ASSERT_TRUE(s->tok.ident.lexeme == NULL);
 
+    U64 tokLn = 1;
     for (U64 i = 0; i < tokensSize; i++)
     {
-        nextTok(s);
+        EToken tok = nextTok(s);
+        VCTEST_ASSERT_TRUE(s->tok.base.type == tok);
         VCTEST_ASSERT_TRUE(s->tok.base.type == tokens[i]);
-        VCTEST_ASSERT_TRUE(s->tok.ident.lexeme == NULL);
+        VCTEST_ASSERT_TRUE(s->tok.base.col == 1);
+        VCTEST_ASSERT_TRUE(s->tok.base.ln == tokLn);
+        tokLn++;
     }
 
     // CLEAN-UP

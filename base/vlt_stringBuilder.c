@@ -32,7 +32,7 @@ void del_stringBuilder(SStringBuilder* sb)
     }
 }
 
-String* sb_ToString(SStringBuilder* sb)
+String* sb_toString(SStringBuilder* sb)
 {
     ASSERT(sb != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SStringBuilder");
     return new_string(sb->buf, sb->len);
