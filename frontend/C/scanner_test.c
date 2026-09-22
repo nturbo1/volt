@@ -277,3 +277,98 @@ TEST(testScanComments,
     del_string(testFileDirPath);
     del_string(filepath);
 }
+
+TEST(testScanOperators,
+     "When scan a sequence of operators in a file, then"
+     " nextTok should scan correct tokens")
+{
+    const U64 tokensSize = eTokenOperatorEnd - eTokenOperatorBeg;
+    // Tokens and their order MUST match the tokens and the
+    // order they appear in inside the test input file
+    const EToken tokens[eTokenOperatorEnd - eTokenOperatorBeg] = {
+        ETOKEN_ADD,
+        ETOKEN_SUB,
+        ETOKEN_MUL,
+        ETOKEN_QUO,
+        ETOKEN_REM,
+        ETOKEN_AND,
+        ETOKEN_OR,
+        ETOKEN_XOR,
+        ETOKEN_SHL,
+        ETOKEN_SHR,
+        ETOKEN_AND_NOT,
+        ETOKEN_ADD_ASSIGN,
+        ETOKEN_SUB_ASSIGN,
+        ETOKEN_MUL_ASSIGN,
+        ETOKEN_QUO_ASSIGN,
+        ETOKEN_REM_ASSIGN,
+        ETOKEN_AND_ASSIGN,
+        ETOKEN_OR_ASSIGN,
+        ETOKEN_XOR_ASSIGN,
+        ETOKEN_SHL_ASSIGN,
+        ETOKEN_SHR_ASSIGN,
+        ETOKEN_AND_NOT_ASSIGN,
+        ETOKEN_LAND,
+        ETOKEN_LOR,
+        ETOKEN_RARROW,
+        ETOKEN_INC,
+        ETOKEN_DEC,
+        ETOKEN_EQL,
+        ETOKEN_LSS,
+        ETOKEN_GTR,
+        ETOKEN_ASSIGN,
+        ETOKEN_NOT,
+        ETOKEN_NEQ,
+        ETOKEN_LEQ,
+        ETOKEN_GEQ,
+
+        ETOKEN_EOF
+    };
+
+    // GIVEN
+    SStringBuilder* sb = new_stringBuilder();
+    VCTEST_ASSERT_TRUE(sb != NULL);
+    String* testFilepath = new_stringFromLit(__FILE__);
+    VCTEST_ASSERT_TRUE(testFilepath != NULL);
+    String* testFileDirPath = dirName(testFilepath);
+    VCTEST_ASSERT_TRUE(testFileDirPath != NULL);
+    sb_appendString(sb, testFileDirPath);
+    sb_appendStrLit(sb, "tests/scanner/operators.c1");
+    String* filepath = sb_toString(sb);
+    VCTEST_ASSERT_TRUE(filepath != NULL);
+
+    SScanner* s = new_scanner(filepath);
+    VCTEST_ASSERT_TRUE(s != NULL);
+    VCTEST_ASSERT_TRUE(s->src->file != NULL);
+    VCTEST_ASSERT_TRUE(stringEqual(s->filepath, filepath));
+    VCTEST_ASSERT_TRUE(s->src->bufEnd > 0);
+
+    // Test no token has been scanned yet
+    VCTEST_ASSERT_TRUE(s->src->next == 0);
+    VCTEST_ASSERT_TRUE(s->lnOffs == 0);
+    VCTEST_ASSERT_TRUE(s->colOffs == 0);
+    VCTEST_ASSERT_TRUE(s->tok.base.ln == 0);
+    VCTEST_ASSERT_TRUE(s->tok.base.col == 0);
+    VCTEST_ASSERT_TRUE(s->tok.base.type == ETOKEN_NO_VALUE);
+
+    U64 tokLn = 1;
+    for (U64 i = 0; i < tokensSize; i++)
+    {
+        // WHEN
+        EToken tok = nextTok(s);
+
+        // THEN
+        VCTEST_ASSERT_TRUE(s->tok.base.type == tok);
+        VCTEST_ASSERT_TRUE(s->tok.base.type == tokens[i]);
+        VCTEST_ASSERT_TRUE(s->tok.base.col == 1);
+        VCTEST_ASSERT_TRUE(s->tok.base.ln == tokLn);
+        tokLn++;
+    }
+
+    // CLEAN-UP
+    del_scanner(s);
+    del_stringBuilder(sb);
+    del_string(testFilepath);
+    del_string(testFileDirPath);
+    del_string(filepath);
+}
