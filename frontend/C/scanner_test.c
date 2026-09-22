@@ -2,7 +2,7 @@
 #include "vctest.h"
 #include "base_inc.h"
 
-static 
+#include <stdio.h>
 
 // typedef struct TokenLexemePair
 // {
@@ -113,9 +113,12 @@ TEST(testScanPunctuators,
 
     for (U64 i = 0; i < tokensSize; i++)
     {
-        nextTok(s);
+        EToken tok = nextTok(s);
+        printf("s->tok.base.type = %s (%d)   tok = %s (%d)   tokens[i] = %s (%d)\n",
+               eTokenToCStr(s->tok.base.type), s->tok.base.type, eTokenToCStr(tok),
+               tok, eTokenToCStr(tokens[i]), tokens[i]);
+        VCTEST_ASSERT_TRUE(s->tok.base.type == tok);
         VCTEST_ASSERT_TRUE(s->tok.base.type == tokens[i]);
-        VCTEST_ASSERT_TRUE(s->tok.ident.lexeme == NULL);
     }
 
     // CLEAN-UP

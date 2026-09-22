@@ -6,17 +6,53 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <string.h>
+
+// HMap<String*, EToken>
+static void initKeywordsMap();
+static HMap* keywords = NULL;
 
 ///////////////////////////////////////////////////////////////////////////////////
 // HMap<String, EToken>
 ///////////////////////////////////////////////////////////////////////////////////
-// static EToken hmapStringToEToken_get(HMap* const hm, String* key);
-static void hmapStringToEToken_put(HMap* const hm, String* key, EToken val);
-static EToken hmapStringToEToken_get(HMap* const hm, String* key);
-static void initKeywordsMap();
 
-// HMap<String*, EToken>
-static HMap* keywords = NULL;
+static void hmapStringToEToken_put(HMap* const hm, const String* const key, const EToken val)
+{
+    ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
+    ASSERT(key->len > 0, "Empty string can't be a hashmap key.");
+    hmap_put(hm, key->bytes, key->len + 1, (U8*) &val, sizeof(EToken));
+}
+
+static EToken hmapStringToEToken_get(HMap* const hm, const String* const key)
+{
+    ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
+    ASSERT(key->len > 0, "Empty string can't be a hashmap key.");
+    MapElem* elem = hmap_get(hm, key->bytes, key->len + 1);
+    if (elem != NULL)
+    {
+        ASSERT_DBG(elem->valSize == sizeof(EToken),
+                   "HMap element value size doesn't match EToken size.");
+        return *(EToken*)(elem->val);
+    }
+
+    return eTokenEnd;
+}
+
+static void printHMapStringKey(FILE* const out, const U8* const key)
+{
+    ASSERT(out != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "FILE");
+    ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "U8");
+    fprintf(out, "\"%s\"", key);
+}
+
+static void printHMapETokenVal(FILE* const out, const U8* const val)
+{
+    ASSERT(out != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "FILE");
+    ASSERT(val != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "U8");
+
+    EToken tok = *((EToken*) val);
+    fprintf(out, "%s", eTokenToCStr(tok));
+}
 
 // ===============================================================================
 // ================================== SScanSrc ===================================
@@ -161,6 +197,18 @@ EToken nextTok(SScanner* s)
             setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_SEMICOLON);
             return ETOKEN_SEMICOLON;
 
+        case '*':
+            nextChar(s);
+            ch = peekChar(s);
+            if (ch == '=')
+            {
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_MUL_ASSIGN);
+                return ETOKEN_MUL_ASSIGN;
+            }
+            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_ASTERISK);
+            return ETOKEN_ASTERISK;
+
         default:
             return scanIdentifier(s);
         }
@@ -207,6 +255,7 @@ void del_scanner(SScanner* s)
         delScanSrc(s->src);
         del_string(s->filepath);
         del_hmap(keywords);
+        keywords = NULL;
         free(s);
     }
 }
@@ -235,10 +284,12 @@ static EToken scanIdentifier(SScanner* s)
     if(identTokType != eTokenEnd)
     {
         setTokBase(&(s->tok), tokCol, tokLn, identTokType);
-        return identTokType;
+        goto defer;
     }
-
     setTokIdent(&(s->tok), tokCol, tokLn, ETOKEN_IDENT, ident);
+
+defer:
+    del_string(ident);
     del_stringBuilder(identSb);
     return s->tok.base.type;
 }
@@ -284,45 +335,56 @@ static void skipWhitespace(SScanner* s)
 static void initKeywordsMap()
 {
     if (keywords == NULL)
-    {
         keywords = new_hmap();
-        hmapStringToEToken_put(keywords, new_stringFromLit("const"),       ETOKEN_CONST);
-        hmapStringToEToken_put(keywords, new_stringFromLit("if"),          ETOKEN_IF);
-        hmapStringToEToken_put(keywords, new_stringFromLit("else"),        ETOKEN_ELSE);
-        hmapStringToEToken_put(keywords, new_stringFromLit("for"),         ETOKEN_FOR);
-        hmapStringToEToken_put(keywords, new_stringFromLit("break"),       ETOKEN_BREAK);
-        hmapStringToEToken_put(keywords, new_stringFromLit("continue"),    ETOKEN_CONTINUE);
-        hmapStringToEToken_put(keywords, new_stringFromLit("goto"),        ETOKEN_GOTO);
-        hmapStringToEToken_put(keywords, new_stringFromLit("return"),      ETOKEN_RETURN);
-        hmapStringToEToken_put(keywords, new_stringFromLit("struct"),      ETOKEN_STRUCT);
-        hmapStringToEToken_put(keywords, new_stringFromLit("union"),       ETOKEN_UNION);
-        hmapStringToEToken_put(keywords, new_stringFromLit("enum"),        ETOKEN_ENUM);
-        hmapStringToEToken_put(keywords, new_stringFromLit("switch"),      ETOKEN_SWITCH);
-        hmapStringToEToken_put(keywords, new_stringFromLit("case"),        ETOKEN_CASE);
-        hmapStringToEToken_put(keywords, new_stringFromLit("default"),     ETOKEN_DEFAULT);
-        hmapStringToEToken_put(keywords, new_stringFromLit("while"),       ETOKEN_WHILE);
-        hmapStringToEToken_put(keywords, new_stringFromLit("do"),          ETOKEN_DO);
-        hmapStringToEToken_put(keywords, new_stringFromLit("void"),        ETOKEN_VOID);
-        hmapStringToEToken_put(keywords, new_stringFromLit("static"),      ETOKEN_STATIC);
-        hmapStringToEToken_put(keywords, new_stringFromLit("extern"),      ETOKEN_EXTERN);
-        hmapStringToEToken_put(keywords, new_stringFromLit("register"),    ETOKEN_REGISTER);
-        hmapStringToEToken_put(keywords, new_stringFromLit("signed"),      ETOKEN_SIGNED);
-        hmapStringToEToken_put(keywords, new_stringFromLit("unsigned"),    ETOKEN_UNSIGNED);
-        hmapStringToEToken_put(keywords, new_stringFromLit("sizeof"),      ETOKEN_SIZEOF);
-        hmapStringToEToken_put(keywords, new_stringFromLit("typedef"),     ETOKEN_TYPEDEF);
-        hmapStringToEToken_put(keywords, new_stringFromLit("volatile"),    ETOKEN_VOLATILE);
-        hmapStringToEToken_put(keywords, new_stringFromLit("auto"),        ETOKEN_AUTO); 
-        hmapStringToEToken_put(keywords, new_stringFromLit("inline"),      ETOKEN_INLINE);
-        hmapStringToEToken_put(keywords, new_stringFromLit("restrict"),    ETOKEN_RESTRICT);
-        hmapStringToEToken_put(keywords, new_stringFromLit("_Complex"),    ETOKEN__COMPLEX);
-        hmapStringToEToken_put(keywords, new_stringFromLit("_Imaginary"),  ETOKEN__IMAGINARY);
-        hmapStringToEToken_put(keywords, new_stringFromLit("_Bool"),       ETOKEN__BOOL);
-        hmapStringToEToken_put(keywords, new_stringFromLit("char"),        ETOKEN_CHAR);
-        hmapStringToEToken_put(keywords, new_stringFromLit("short"),       ETOKEN_SHORT);
-        hmapStringToEToken_put(keywords, new_stringFromLit("int"),         ETOKEN_INT);
-        hmapStringToEToken_put(keywords, new_stringFromLit("long"),        ETOKEN_LONG);
-        hmapStringToEToken_put(keywords, new_stringFromLit("float"),       ETOKEN_FLOAT);
-        hmapStringToEToken_put(keywords, new_stringFromLit("double"),      ETOKEN_DOUBLE);
+
+    const U64 kwsCount = eTokenKeywordEnd - eTokenKeywordBeg - 1;
+    const String kws[eTokenKeywordEnd - eTokenKeywordBeg - 1] = {
+        [ETOKEN_CONST - eTokenKeywordBeg - 1] = { .bytes = (U8*) "const", .len = strlen("const") },
+        [ETOKEN_IF - eTokenKeywordBeg - 1] = { .bytes = (U8*) "if", .len = strlen("if") },
+        [ETOKEN_ELSE - eTokenKeywordBeg - 1] = { .bytes = (U8*) "else", .len = strlen("else") },
+        [ETOKEN_FOR - eTokenKeywordBeg - 1] = { .bytes = (U8*) "for", .len = strlen("for") },
+        [ETOKEN_BREAK - eTokenKeywordBeg - 1] = { .bytes = (U8*) "break", .len = strlen("break") },
+        [ETOKEN_CONTINUE - eTokenKeywordBeg - 1] = { .bytes = (U8*) "continue", .len = strlen("continue") },
+        [ETOKEN_GOTO - eTokenKeywordBeg - 1] = { .bytes = (U8*) "goto", .len = strlen("goto") },
+        [ETOKEN_RETURN - eTokenKeywordBeg - 1] = { .bytes = (U8*) "return", .len = strlen("return") },
+        [ETOKEN_STRUCT - eTokenKeywordBeg - 1] = { .bytes = (U8*) "struct", .len = strlen("struct") },
+        [ETOKEN_UNION - eTokenKeywordBeg - 1] = { .bytes = (U8*) "union", .len = strlen("union") },
+        [ETOKEN_ENUM - eTokenKeywordBeg - 1] = { .bytes = (U8*) "enum", .len = strlen("enum") },
+        [ETOKEN_SWITCH - eTokenKeywordBeg - 1] = { .bytes = (U8*) "switch", .len = strlen("switch") },
+        [ETOKEN_CASE - eTokenKeywordBeg - 1] = { .bytes = (U8*) "case", .len = strlen("case") },
+        [ETOKEN_DEFAULT - eTokenKeywordBeg - 1] = { .bytes = (U8*) "default", .len = strlen("default") },
+        [ETOKEN_WHILE - eTokenKeywordBeg - 1] = { .bytes = (U8*) "while", .len = strlen("while") },
+        [ETOKEN_DO - eTokenKeywordBeg - 1] = { .bytes = (U8*) "do", .len = strlen("do") },
+        [ETOKEN_VOID - eTokenKeywordBeg - 1] = { .bytes = (U8*) "void", .len = strlen("void") },
+        [ETOKEN_STATIC - eTokenKeywordBeg - 1] = { .bytes = (U8*) "static", .len = strlen("static") },
+        [ETOKEN_EXTERN - eTokenKeywordBeg - 1] = { .bytes = (U8*) "extern", .len = strlen("extern") },
+        [ETOKEN_REGISTER - eTokenKeywordBeg - 1] = { .bytes = (U8*) "register", .len = strlen("register") },
+        [ETOKEN_SIGNED - eTokenKeywordBeg - 1] = { .bytes = (U8*) "signed", .len = strlen("signed") },
+        [ETOKEN_UNSIGNED - eTokenKeywordBeg - 1] = { .bytes = (U8*) "unsigned", .len = strlen("unsigned") },
+        [ETOKEN_SIZEOF - eTokenKeywordBeg - 1] = { .bytes = (U8*) "sizeof", .len = strlen("sizeof") },
+        [ETOKEN_TYPEDEF - eTokenKeywordBeg - 1] = { .bytes = (U8*) "typedef", .len = strlen("typedef") },
+        [ETOKEN_VOLATILE - eTokenKeywordBeg - 1] = { .bytes = (U8*) "volatile", .len = strlen("volatile") },
+        [ETOKEN_AUTO - eTokenKeywordBeg - 1] = { .bytes = (U8*) "auto", .len = strlen("auto") },
+        [ETOKEN_INLINE - eTokenKeywordBeg - 1] = { .bytes = (U8*) "inline", .len = strlen("inline") },
+        [ETOKEN_RESTRICT - eTokenKeywordBeg - 1] = { .bytes = (U8*) "restrict", .len = strlen("restrict") },
+        [ETOKEN__COMPLEX - eTokenKeywordBeg - 1] = { .bytes = (U8*) "_Complex", .len = strlen("_Complex") },
+        [ETOKEN__IMAGINARY - eTokenKeywordBeg - 1] = { .bytes = (U8*) "_Imaginary", .len = strlen("_Imaginary") },
+        [ETOKEN__BOOL - eTokenKeywordBeg - 1] = { .bytes = (U8*) "_Bool", .len = strlen("_Bool") },
+        [ETOKEN_CHAR - eTokenKeywordBeg - 1] = { .bytes = (U8*) "char", .len = strlen("char") },
+        [ETOKEN_SHORT - eTokenKeywordBeg - 1] = { .bytes = (U8*) "short", .len = strlen("short") },
+        [ETOKEN_INT - eTokenKeywordBeg - 1] = { .bytes = (U8*) "int", .len = strlen("int") },
+        [ETOKEN_LONG - eTokenKeywordBeg - 1] = { .bytes = (U8*) "long", .len = strlen("long") },
+        [ETOKEN_FLOAT - eTokenKeywordBeg - 1] = { .bytes = (U8*) "float", .len = strlen("float") },
+        [ETOKEN_DOUBLE - eTokenKeywordBeg - 1] = { .bytes = (U8*) "double", .len = strlen("double") }
+    };
+
+    if (keywords->size == 0)
+    {
+        for (U64 i = 0; i < kwsCount; i++)
+        {
+            const String* kw = kws + i;
+            hmapStringToEToken_put(keywords, kw, (EToken) (eTokenKeywordBeg + 1 + i));
+        }
     }
 }
 
@@ -430,22 +492,12 @@ static void fillScanSrcBuf(SScanSrc* src)
 ///////////////////////////////////////////////////////////////////////////////////
 // HMap<String, EToken>
 ///////////////////////////////////////////////////////////////////////////////////
-
-static void hmapStringToEToken_put(HMap* const hm, String* key, EToken val)
+void printHMapStringEToken(const HMap* const hm)
 {
-    ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
-    hmap_put(hm, key->bytes, key->len, (U8*) &val, sizeof(EToken));
+    hmap_print(hm, stdout, printHMapStringKey, printHMapETokenVal);
 }
 
-static EToken hmapStringToEToken_get(HMap* const hm, String* key)
+void printKeywordsHMap()
 {
-    ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
-    MapElem* elem = hmap_get(hm, key->bytes, key->len);
-    if (elem != NULL)
-    {
-        ASSERT_DBG(elem->valSize == sizeof(EToken), "HMap element value size doesn't match EToken size.");
-        return *(EToken*)(elem->val);
-    }
-
-    return eTokenEnd;
+    printHMapStringEToken(keywords);
 }

@@ -3,6 +3,7 @@
 #include "vlt_assert.h"
 
 #include <stdlib.h>
+#include <stdio.h>
 
 #define LOAD_FACTOR_LIMIT 0.75
 
@@ -71,7 +72,7 @@ void hmap_put(HMap* const hm,
            (void*) hm->buckets,
            hm->bucketsSize);
 
-    if ( (hm->size / hm->bucketsSize) >= LOAD_FACTOR_LIMIT )
+    if ( (hm->size / (double) hm->bucketsSize) >= LOAD_FACTOR_LIMIT )
         rehash(hm);
 
     putKV(hm->buckets, hm->bucketsSize, key, keySize, val, valSize, &(hm->size));
@@ -279,4 +280,50 @@ static MapElemNode* newMapElemNode(const U8* const key,
     newElemNode->next = NULL;
 
     return newElemNode;
+}
+
+void hmap_print(const HMap* const hm,
+                FILE* const outFile,
+                HMapElemKeyFPrint printKey,
+                HMapElemValFPrint printVal)
+{
+    ASSERT(hm != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "HMap");
+    FILE* out = stdout;
+    if (outFile != NULL)
+        out = outFile;
+
+    fprintf(out, "{size: %zu,\n", hm->size);
+    fprintf(out, " buckets:\n[");
+    for (U64 i = 0; i < hm->bucketsSize; i++)
+    {
+        MapBucketEntry* mbe = hm->buckets + i;
+        ASSERT((mbe->head == NULL) == (mbe->size == 0),
+               HMAP_BUCKET_ENTRY_HEAD_AND_SIZE_ARE_NOT_CONSISTENT_ERROR_MSG_FORMAT,
+               (void*) mbe->head,
+               mbe->size);
+        fprintf(out, "[%zu] size=%zu head->", i, mbe->size);
+        if (mbe->size > 0)
+        {
+            MapElemNode* curr = mbe->head;
+            while (curr)
+            {
+                fprintf(out, "{key = ");
+                printKey(out, curr->elem.key);
+                fprintf(out, ", val = ");
+                printVal(out, curr->elem.val);
+                fprintf(out, "}->");
+                curr = curr->next;
+            }
+            fprintf(out, "NULL");
+        }
+        else
+        {
+            fprintf(out, "NULL");
+        }
+        if (i == hm->bucketsSize - 1)
+            fprintf(out, "]");
+        else
+            fprintf(out, "\n ");
+    }
+    fprintf(out, "}\n");
 }

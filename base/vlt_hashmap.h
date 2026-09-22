@@ -3,6 +3,8 @@
 
 #include "base.h"
 
+#include <stdio.h>
+
 typedef struct
 {
     const U8* const key;
@@ -50,5 +52,18 @@ void hmap_put(HMap* const hm,
 
 MapElem* hmap_get(const HMap* const hm, const U8* const key, const U64 keySize);
 void hmap_del(HMap* const hm, const U8* const key, const U64 keySize);
+
+typedef void (*HMapElemKeyFPrint)(FILE* const out, const U8* const key);
+typedef void (*HMapElemValFPrint)(FILE* const out, const U8* const val);
+
+/*
+ * Prints out the contents of a given hashmap to a given file.
+ *
+ * Mostly used for debugging purposes.
+ */
+void hmap_print(const HMap* const hm,
+                FILE* const outFile,
+                HMapElemKeyFPrint printKey,
+                HMapElemValFPrint printVal);
 
 #endif // BASE_VLT_HASHMAP_H
