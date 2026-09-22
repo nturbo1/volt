@@ -201,14 +201,17 @@ EToken nextTok(SScanner* s)
         case '*':
             nextChar(s);
             ch = peekChar(s);
-            if (ch == '=')
+            switch(ch)
             {
+            case '=':
                 nextChar(s);
                 setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_MUL_ASSIGN);
                 return ETOKEN_MUL_ASSIGN;
+
+            default:
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_ASTERISK);
+                return ETOKEN_ASTERISK;
             }
-            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_ASTERISK);
-            return ETOKEN_ASTERISK;
 
         case '/':
             nextChar(s);
@@ -225,9 +228,234 @@ EToken nextTok(SScanner* s)
                 setTokBase(&(s->tok), tokCol, tokLn, scanComment(s, true));
                 return s->tok.base.type;
 
+            case '=':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_QUO_ASSIGN);
+                return ETOKEN_QUO_ASSIGN;
+
             default:
                 setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_QUO);
                 return ETOKEN_QUO;
+            }
+
+        case '+':
+            nextChar(s);
+            ch = peekChar(s);
+            switch(ch)
+            {
+            case '+':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_INC);
+                return ETOKEN_INC;
+
+            case '=':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_ADD_ASSIGN);
+                return ETOKEN_ADD_ASSIGN;
+
+            default:
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_ADD);
+                return ETOKEN_ADD;
+            }
+
+        case '-':
+            nextChar(s);
+            ch = peekChar(s);
+            switch(ch)
+            {
+            case '-':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_DEC);
+                return ETOKEN_DEC;
+
+            case '=':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_SUB_ASSIGN);
+                return ETOKEN_SUB_ASSIGN;
+
+            case '>':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_RARROW);
+                return ETOKEN_RARROW;
+
+            default:
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_SUB);
+                return ETOKEN_SUB;
+            }
+
+        case '%':
+            nextChar(s);
+            ch = peekChar(s);
+            switch(ch)
+            {
+            case '=':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_REM_ASSIGN);
+                return ETOKEN_REM_ASSIGN;
+
+            default:
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_REM);
+                return ETOKEN_REM;
+            }
+
+        case '&':
+            nextChar(s);
+            ch = peekChar(s);
+            switch(ch)
+            {
+            case '^':
+                nextChar(s);
+                ch = peekChar(s);
+                switch(ch)
+                {
+                case '=':
+                    nextChar(s);
+                    setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_AND_NOT_ASSIGN);
+                    return ETOKEN_AND_NOT_ASSIGN;
+
+                default:
+                    setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_AND_NOT);
+                    return ETOKEN_AND_NOT;
+                }
+
+            case '=':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_AND_ASSIGN);
+                return ETOKEN_AND_ASSIGN;
+
+            case '&':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_LAND);
+                return ETOKEN_LAND;
+
+            default:
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_AND);
+                return ETOKEN_AND;
+            }
+
+        case '|':
+            nextChar(s);
+            ch = peekChar(s);
+            switch(ch)
+            {
+            case '|':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_LOR);
+                return ETOKEN_LOR;
+
+            case '=':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_OR_ASSIGN);
+                return ETOKEN_OR_ASSIGN;
+
+            default:
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_OR);
+                return ETOKEN_OR;
+            }
+
+        case '^':
+            nextChar(s);
+            ch = peekChar(s);
+            switch(ch)
+            {
+            case '=':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_XOR_ASSIGN);
+                return ETOKEN_XOR_ASSIGN;
+
+            default:
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_XOR);
+                return ETOKEN_XOR;
+            }
+
+        case '<':
+            nextChar(s);
+            ch = peekChar(s);
+            switch(ch)
+            {
+            case '=':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_LEQ);
+                return ETOKEN_LEQ;
+
+            case '<':
+                nextChar(s);
+                ch = peekChar(s);
+                switch(ch)
+                {
+                case '=':
+                    nextChar(s);
+                    setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_SHL_ASSIGN);
+                    return ETOKEN_SHL_ASSIGN;
+
+                default:
+                    setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_SHL);
+                    return ETOKEN_SHL;
+                }
+
+            default:
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_LSS);
+                return ETOKEN_LSS;
+            }
+
+        case '>':
+            nextChar(s);
+            ch = peekChar(s);
+            switch(ch)
+            {
+            case '=':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_GEQ);
+                return ETOKEN_GEQ;
+
+            case '>':
+                nextChar(s);
+                ch = peekChar(s);
+                switch(ch)
+                {
+                case '=':
+                    nextChar(s);
+                    setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_SHR_ASSIGN);
+                    return ETOKEN_SHR_ASSIGN;
+
+                default:
+                    setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_SHR);
+                    return ETOKEN_SHR;
+                }
+
+            default:
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_GTR);
+                return ETOKEN_GTR;
+            }
+
+        case '=':
+            nextChar(s);
+            ch = peekChar(s);
+            switch(ch)
+            {
+            case '=':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_EQL);
+                return ETOKEN_EQL;
+
+            default:
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_ASSIGN);
+                return ETOKEN_ASSIGN;
+            }
+
+        case '!':
+            nextChar(s);
+            ch = peekChar(s);
+            switch(ch)
+            {
+            case '=':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_NEQ);
+                return ETOKEN_NEQ;
+
+            default:
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_NOT);
+                return ETOKEN_NOT;
             }
 
         default:

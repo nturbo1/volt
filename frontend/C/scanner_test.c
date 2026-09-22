@@ -288,7 +288,12 @@ TEST(testScanOperators,
     const EToken tokens[eTokenOperatorEnd - eTokenOperatorBeg] = {
         ETOKEN_ADD,
         ETOKEN_SUB,
-        ETOKEN_MUL,
+        ETOKEN_ASTERISK, // Scanner/lexer can't figure out if '*' is a
+                         // multiplication operator or a punctuator since
+                         // it doesn't enough context for it. So, it returns
+                         // it as an asterisk (a punctuator) and leave it for
+                         // the parser to decipher the exact type of the token
+                         // depending on the context.
         ETOKEN_QUO,
         ETOKEN_REM,
         ETOKEN_AND,
