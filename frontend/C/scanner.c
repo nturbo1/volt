@@ -83,6 +83,7 @@ static EToken scanIdentifier(SScanner* s);
 // static EToken scanInt(SScanner* s);
 // static EToken scanFloat(SScanner* s);
 static EToken scanNumber(SScanner* s);
+static EToken scanComment(SScanner* s, const bool multiLine);
 
 static bool isWhitespace(const U8 ch);
 static bool isAlpha(const U8 ch);
@@ -209,6 +210,26 @@ EToken nextTok(SScanner* s)
             setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_ASTERISK);
             return ETOKEN_ASTERISK;
 
+        case '/':
+            nextChar(s);
+            ch = peekChar(s);
+            switch(ch)
+            {
+            case '/':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, scanComment(s, false));
+                return s->tok.base.type;
+
+            case '*':
+                nextChar(s);
+                setTokBase(&(s->tok), tokCol, tokLn, scanComment(s, true));
+                return s->tok.base.type;
+
+            default:
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_QUO);
+                return ETOKEN_QUO;
+            }
+
         default:
             return scanIdentifier(s);
         }
@@ -299,6 +320,17 @@ static EToken scanNumber(SScanner* s)
     ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
     // TODO
     return 0;
+}
+
+static EToken scanComment(SScanner* s, const bool multiLine)
+{
+    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    if (multiLine)
+        while ( !(nextChar(s) == '*' && nextChar(s) == '/') );
+    else
+        while (nextChar(s) != '\n');
+
+    return ETOKEN_COMMENT;
 }
 
 static bool isWhitespace(const U8 ch)
