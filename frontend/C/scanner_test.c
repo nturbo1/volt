@@ -94,10 +94,7 @@ TEST(testScanPunctuators,
     String* filepath = sb_toString(sb);
     VCTEST_ASSERT_TRUE(filepath != NULL);
 
-    // WHEN
     SScanner* s = new_scanner(filepath);
-
-    // THEN
     VCTEST_ASSERT_TRUE(s != NULL);
     VCTEST_ASSERT_TRUE(s->src->file != NULL);
     VCTEST_ASSERT_TRUE(stringEqual(s->filepath, filepath));
@@ -113,7 +110,10 @@ TEST(testScanPunctuators,
 
     for (U64 i = 0; i < tokensSize; i++)
     {
+        // WHEN
         EToken tok = nextTok(s);
+
+        // THEN
         VCTEST_ASSERT_TRUE(s->tok.base.type == tok);
         VCTEST_ASSERT_TRUE(s->tok.base.type == tokens[i]);
     }
@@ -186,10 +186,7 @@ TEST(testScanKeywords,
     String* filepath = sb_toString(sb);
     VCTEST_ASSERT_TRUE(filepath != NULL);
 
-    // WHEN
     SScanner* s = new_scanner(filepath);
-
-    // THEN
     VCTEST_ASSERT_TRUE(s != NULL);
     VCTEST_ASSERT_TRUE(s->src->file != NULL);
     VCTEST_ASSERT_TRUE(stringEqual(s->filepath, filepath));
@@ -206,10 +203,69 @@ TEST(testScanKeywords,
     U64 tokLn = 1;
     for (U64 i = 0; i < tokensSize; i++)
     {
+        // WHEN
         EToken tok = nextTok(s);
+
+        // THEN
         VCTEST_ASSERT_TRUE(s->tok.base.type == tok);
         VCTEST_ASSERT_TRUE(s->tok.base.type == tokens[i]);
         VCTEST_ASSERT_TRUE(s->tok.base.col == 1);
+        VCTEST_ASSERT_TRUE(s->tok.base.ln == tokLn);
+        tokLn++;
+    }
+
+    // CLEAN-UP
+    del_scanner(s);
+    del_stringBuilder(sb);
+    del_string(testFilepath);
+    del_string(testFileDirPath);
+    del_string(filepath);
+}
+
+TEST(testScanComments,
+     "When scan a sequence of single-line and multi-line commments"
+     " in a file, then nextTok should scan correct tokens with"
+     " correct comments text")
+{
+    // GIVEN
+    SStringBuilder* sb = new_stringBuilder();
+    VCTEST_ASSERT_TRUE(sb != NULL);
+    String* testFilepath = new_stringFromLit(__FILE__);
+    VCTEST_ASSERT_TRUE(testFilepath != NULL);
+    String* testFileDirPath = dirName(testFilepath);
+    VCTEST_ASSERT_TRUE(testFileDirPath != NULL);
+    sb_appendString(sb, testFileDirPath);
+    sb_appendStrLit(sb, "tests/scanner/comments.c1");
+    String* filepath = sb_toString(sb);
+    VCTEST_ASSERT_TRUE(filepath != NULL);
+
+    SScanner* s = new_scanner(filepath);
+    VCTEST_ASSERT_TRUE(s != NULL);
+    VCTEST_ASSERT_TRUE(s->src->file != NULL);
+    VCTEST_ASSERT_TRUE(stringEqual(s->filepath, filepath));
+    VCTEST_ASSERT_TRUE(s->src->bufEnd > 0);
+
+    // Test no token has been scanned yet
+    VCTEST_ASSERT_TRUE(s->src->next == 0);
+    VCTEST_ASSERT_TRUE(s->lnOffs == 0);
+    VCTEST_ASSERT_TRUE(s->colOffs == 0);
+    VCTEST_ASSERT_TRUE(s->tok.base.ln == 0);
+    VCTEST_ASSERT_TRUE(s->tok.base.col == 0);
+    VCTEST_ASSERT_TRUE(s->tok.base.type == ETOKEN_NO_VALUE);
+
+    U64 tokLn = 1;
+    const U64 commentsCount = 6;
+    for (U64 i = 0; i < commentsCount; i++)
+    {
+        // WHEN
+        EToken tok = nextTok(s);
+
+        // THEN
+        VCTEST_ASSERT_TRUE(s->tok.base.type == tok);
+        VCTEST_ASSERT_TRUE(s->tok.base.type == ETOKEN_COMMENT);
+        // TODO: Fix it later: you need to set up the expected comment tokens info
+        //       that is compatible with the test input file
+        // VCTEST_ASSERT_TRUE(s->tok.base.col == 1);
         VCTEST_ASSERT_TRUE(s->tok.base.ln == tokLn);
         tokLn++;
     }
