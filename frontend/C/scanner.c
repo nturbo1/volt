@@ -307,6 +307,7 @@ EToken nextTok(SScanner* s)
                                     tokLn,
                                     ETOKEN_INVALID_IDENT,
                                     new_stringFromLit(".."));
+                        s->err = EERROR_TYPE_INVALID_IDENT;
                         return ETOKEN_INVALID_IDENT;
                     }
                 }
@@ -645,6 +646,7 @@ static EToken scanIdentifier(SScanner* s)
     if (!isAlpha(ch) && ch != '_')
     {
         setTokIdent(&(s->tok), tokCol, tokLn, ETOKEN_INVALID_IDENT, NULL);
+        s->err = EERROR_TYPE_INVALID_IDENT;
         return ETOKEN_INVALID_IDENT;
     }
 
@@ -696,6 +698,7 @@ static EToken scanNumber(SScanner* s)
             else if (isDecDigit(ch))
             {
                 setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_INVALID_INT_LIT);
+                s->err = EERROR_TYPE_INVALID_OCTAL_LIT;
                 return ETOKEN_INVALID_INT_LIT;
             }
             else
