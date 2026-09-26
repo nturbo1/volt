@@ -67,12 +67,11 @@ static U8 peek(SScanSrc* src);
 // ================================== SScanner ===================================
 // ===============================================================================
 static inline void setTokBase(UToken* tok, const U64 col, const U64 ln, EToken type);
-// static void setTokNumber(UToken* tok,
-//                          const U64 col,
-//                          const U64 ln,
-//                          EToken type,
-//                          const U64 val);
-
+static void setTokNumber(UToken* tok,
+                         const U64 col,
+                         const U64 ln,
+                         EToken type,
+                         const U64 val);
 static inline void setTokIdent(UToken* tok,
                                const U64 col,
                                const U64 ln,
@@ -81,15 +80,137 @@ static inline void setTokIdent(UToken* tok,
 
 static EToken scanIdentifier(SScanner* s);
 // static EToken scanInt(SScanner* s);
-// static EToken scanFloat(SScanner* s);
 static EToken scanNumber(SScanner* s);
+static EToken scanOctal(SScanner* s);
+static EToken scanHex(SScanner* s);
+static EToken scanDecimal(SScanner* s);
+static EToken scanFloat(SScanner* s);
 static EToken scanComment(SScanner* s, const bool multiLine);
 
 static bool isWhitespace(const U8 ch);
 static bool isAlpha(const U8 ch);
 static bool isAlnum(const U8 ch);
 static bool isDecDigit(const U8 ch);
+static bool isOctDigit(const U8 ch);
 static void skipWhitespace(SScanner* s);
+
+typedef enum ENumBase
+{
+    eNumBaseBeg,
+    ENUMBASE_10,
+    ENUMBASE_8,
+    ENUMBASE_16,
+    ENUMBASE_2,
+    eNumBaseEnd
+}
+ENumBase;
+
+// Converts a given digit character in a given number base
+// to its integral value.
+// For instance:
+//     decimal:     '9' -> 9, '0' -> 0, '3' -> 3, ...
+//     hexadecimal: '2' -> 2, '0' -> 0, 'a' -> 10, 'F' -> 15, ...
+//     octal:       '4' -> 4, '7' -> 7, '0' -> 0, ...
+//     binary:      '0' -> 0, '1' -> 1
+inline static U64 digitFromCharToInt(const U8 digitChar, const ENumBase base, EErrorType* const err)
+{
+    *err = EERROR_TYPE_NO_ERROR;
+    ASSERT(eNumBaseBeg < base && base < eNumBaseEnd,
+           "Number base enum value is out of range.");
+
+    switch(base)
+    {
+    case ENUMBASE_10:
+        switch(digitChar)
+        {
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            return digitChar - '0';
+
+        default:
+            *err = EERROR_TYPE_INVALID_DECIMAL_LIT;
+            return 0;
+        }
+
+    case ENUMBASE_8:
+        switch(digitChar)
+        {
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+            return digitChar - '0';
+
+        default:
+            *err = EERROR_TYPE_INVALID_OCTAL_LIT;
+            return 0;
+        }
+
+    case ENUMBASE_16:
+        switch(digitChar)
+        {
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            return digitChar - '0';
+
+        case 'A':
+        case 'B':
+        case 'C':
+        case 'D':
+        case 'E':
+        case 'F':
+            return (digitChar - 'A') + 10;
+
+        case 'a':
+        case 'b':
+        case 'c':
+        case 'd':
+        case 'e':
+        case 'f':
+            return (digitChar - 'a') + 10;
+
+        default:
+            *err = EERROR_TYPE_INVALID_HEX_LIT;
+            return 0;
+        }
+
+    case ENUMBASE_2:
+        switch(digitChar)
+        {
+        case '0':
+        case '1':
+            return digitChar - '0';
+
+        default:
+            *err = EERROR_TYPE_INVALID_BINARY_LIT;
+            return 0;
+        }
+
+    default:
+        ASSERT(false, "This is ridiculous, bro! You should've checked the"
+               " number base enum value to be in the range! You did fuck up!");
+    }
+}
 
 SScanner* new_scanner(const String* const filepath)
 {
@@ -111,6 +232,7 @@ SScanner* new_scanner(const String* const filepath)
 EToken nextTok(SScanner* s)
 {
     ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    s->err = EERROR_TYPE_NO_ERROR;
     skipWhitespace(s);
     const U64 tokCol = s->colOffs + 1;
     const U64 tokLn = s->lnOffs + 1;
@@ -180,7 +302,11 @@ EToken nextTok(SScanner* s)
                     }
                     else
                     {
-                        setTokIdent(&(s->tok), tokCol, tokLn, ETOKEN_INVALID_IDENT, new_stringFromLit(".."));
+                        setTokIdent(&(s->tok),
+                                    tokCol,
+                                    tokLn,
+                                    ETOKEN_INVALID_IDENT,
+                                    new_stringFromLit(".."));
                         return ETOKEN_INVALID_IDENT;
                     }
                 }
@@ -512,6 +638,7 @@ void del_scanner(SScanner* s)
 static EToken scanIdentifier(SScanner* s)
 {
     ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    s->err = EERROR_TYPE_NO_ERROR;
     const U64 tokCol = s->colOffs + 1;
     const U64 tokLn = s->lnOffs + 1;
     U8 ch = peekChar(s);
@@ -546,8 +673,108 @@ defer:
 static EToken scanNumber(SScanner* s)
 {
     ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    s->err = EERROR_TYPE_NO_ERROR;
+    const U64 tokCol = s->colOffs + 1;
+    const U64 tokLn = s->lnOffs + 1;
+    U8 ch = peekChar(s);
+    switch(ch)
+    {
+    case '0':
+        nextChar(s);
+        ch = peekChar(s);
+        switch(ch)
+        {
+        case 'x':
+        case 'X':
+            nextChar(s);
+            return scanHex(s);
+        default:
+            if (isOctDigit(ch))
+            {
+                return scanOctal(s);
+            }
+            else if (isDecDigit(ch))
+            {
+                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_INVALID_INT_LIT);
+                return ETOKEN_INVALID_INT_LIT;
+            }
+            else
+            {
+                setTokNumber(&(s->tok), tokCol, tokLn, ETOKEN_INT_LIT, 0);
+                return ETOKEN_INT_LIT;
+            }
+        }
+
+    case '.':
+        return scanFloat(s);
+
+    default:
+        if (isDecDigit(ch))
+            return scanDecimal(s);
+        else
+            ASSERT(false,
+                   "You should've peeked a character before going with"
+                   " scanning a number, buddy! It shouldn't have gotten here"
+                   " at all. So, you probably FUCKED UP something somewhere...");
+    }
+}
+
+static EToken scanDecimal(SScanner* s)
+{
+    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    s->err = EERROR_TYPE_NO_ERROR;
+    if (!isDecDigit(peekChar(s)))
+        ASSERT(false,
+               "You should've peeked a character before going with"
+               " scanning a decimal, buddy! It shouldn't have gotten here"
+               " at all. So, you probably FUCKED UP something somewhere...");
+    
+    const U64 tokCol = s->colOffs + 1;
+    const U64 tokLn = s->lnOffs + 1;
+    SStringBuilder* digitsSb = new_stringBuilder();
+    while(isDecDigit(peekChar(s)))
+        sb_appendChar(digitsSb, nextChar(s));
+    String* digitsStr = sb_toString(digitsSb);
+    U64 exp10 = 1;
+    U64 numVal = 0;
+    for (U64 i = digitsStr->len - 1;; i--)
+    {
+        const U8 digChar = stringCharAt(digitsStr, i);
+        const U64 digit = digitFromCharToInt(digChar, ENUMBASE_10, &(s->err));
+        if (s->err != EERROR_TYPE_NO_ERROR)
+            return ETOKEN_INVALID_INT_LIT;
+        numVal += (exp10 * digit);
+        exp10 *= 10;
+
+        if (i == 0) // because i is unsigned and always >=0
+            break;
+    }
+
+    del_stringBuilder(digitsSb);
+    del_string(digitsStr);
+    setTokNumber(&(s->tok), tokCol, tokLn, ETOKEN_INT_LIT, numVal);
+    return ETOKEN_INT_LIT;
+}
+
+static EToken scanHex(SScanner* s)
+{
+    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
     // TODO
-    return 0;
+    return ETOKEN_INVALID_INT_LIT;
+}
+
+static EToken scanOctal(SScanner* s)
+{
+    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    // TODO
+    return ETOKEN_INVALID_INT_LIT;
+}
+
+static EToken scanFloat(SScanner* s)
+{
+    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    // TODO
+    return ETOKEN_INVALID_FLOAT_LIT;
 }
 
 static EToken scanComment(SScanner* s, const bool multiLine)
@@ -579,6 +806,11 @@ static bool isAlnum(const U8 ch)
 static bool isDecDigit(const U8 ch)
 {
     return '0' <= (char) ch && (char) ch <= '9';
+}
+
+static bool isOctDigit(const U8 ch)
+{
+    return '0' <= (char) ch && (char) ch <= '7';
 }
 
 static void skipWhitespace(SScanner* s)
@@ -666,15 +898,15 @@ static inline void setTokIdent(UToken* tok,
     tok->ident.lexeme = lexeme;
 }
 
-// static void setTokNumber(UToken* tok,
-//                       const U64 col,
-//                       const U64 ln,
-//                       EToken type,
-//                       const U64 val)
-// {
-//     setTokBase(tok, col, ln, type);
-//     tok->number.val = val;
-// }
+static void setTokNumber(UToken* tok,
+                         const U64 col,
+                         const U64 ln,
+                         EToken type,
+                         const U64 val)
+{
+    setTokBase(tok, col, ln, type);
+    tok->number.val = val;
+}
 
 // ===============================================================================
 // ================================== SScanSrc ===================================

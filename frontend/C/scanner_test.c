@@ -382,10 +382,10 @@ TEST(testScanDecimalLiterals,
      "When scan a sequence of decimal literals in a file, then"
      " nextTok should scan correct tokens")
 {
-    const U64 tokensSize = 26;
+    const U64 tokensSize = 24;
     // Tokens and their order MUST match the tokens and the
     // order they appear in inside the test input file
-    const U64 intValues[26] = {
+    const U64 intValues[24] = {
         0,
         1,
         2,
@@ -420,7 +420,7 @@ TEST(testScanDecimalLiterals,
     String* testFileDirPath = dirName(testFilepath);
     VCTEST_ASSERT_TRUE(testFileDirPath != NULL);
     sb_appendString(sb, testFileDirPath);
-    sb_appendStrLit(sb, "tests/scanner/operators.c1");
+    sb_appendStrLit(sb, "tests/scanner/numbers/decimals.c1");
     String* filepath = sb_toString(sb);
     VCTEST_ASSERT_TRUE(filepath != NULL);
 
@@ -464,7 +464,6 @@ TEST(testScanDecimalLiterals,
     VCTEST_ASSERT_TRUE(s->tok.base.type == ETOKEN_EOF);
     VCTEST_ASSERT_TRUE(s->tok.base.col == 1);
     VCTEST_ASSERT_TRUE(s->tok.base.ln == tokLn);
-    VCTEST_ASSERT_TRUE(s->tok.number.val == intValues[tokensSize - 1]);
 
     // CLEAN-UP
     del_scanner(s);

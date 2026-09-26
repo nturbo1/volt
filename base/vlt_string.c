@@ -65,3 +65,10 @@ bool stringEqual(String* s1, String* s2)
 
     return s1->len == s2->len && bytesEqual(s1->bytes, s2->bytes, s1->len);
 }
+
+U8 stringCharAt(String* s, U64 idx)
+{
+    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
+    ASSERT(s->len > idx, "String character index %zu is out of bounds.", idx);
+    return s->bytes[idx];
+}

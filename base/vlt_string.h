@@ -39,4 +39,7 @@ void del_string(String* str);
 // Compares two strings and returns true if they're equal
 bool stringEqual(String* s1, String* s2);
 
+// Returns a character at a given index in a given String
+U8 stringCharAt(String* s, U64 idx);
+
 #endif // VLT_STRING_H

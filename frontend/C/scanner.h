@@ -13,7 +13,7 @@ typedef struct SScanner
     U64 lnOffs;     // line offset in the src file
     U64 colOffs;    // column offset in the src file
     UToken tok;
-    EErrorType err;
+    EErrorType err; // error happened in the last scan
 }
 SScanner;
 

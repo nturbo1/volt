@@ -9,6 +9,8 @@ typedef enum EToken
 
     ETOKEN_NO_VALUE, // meaning no token has been scanned or just absence of token
     ETOKEN_INVALID_IDENT,
+    ETOKEN_INVALID_INT_LIT,
+    ETOKEN_INVALID_FLOAT_LIT,
 	ETOKEN_EOF,
 	ETOKEN_COMMENT,
 
