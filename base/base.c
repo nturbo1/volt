@@ -22,6 +22,20 @@ U8* copyBytesToNew(const U8* const bytes, const U64 size)
     return newBytes;
 }
 
+void copyBytesFromTo(const U8* const source, const U64 size, U8* const dest)
+{
+    if (source != NULL && size > 0)
+    {
+        ASSERT(dest != NULL, "Can't copy the bytes to NULL destination!");
+        for (U64 i = 0; i < size; i++)
+            dest[i] = source[i];
+    }
+    else if (source == NULL && size > 0)
+    {
+        ASSERT(false, "NULL pointer to an array of bytes with size >0 was passed.");
+    }
+}
+
 // Parameters for FNV Hash algorithms
 #define FNV_OFFSET 14695981039346656037UL
 #define FNV_PRIME 1099511628211UL

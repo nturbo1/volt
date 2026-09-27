@@ -38,6 +38,7 @@ typedef bool Bool;
 
 bool bytesEqual(const U8* const bytes1, const U8* const bytes2, const U64 bytesSize);
 U8* copyBytesToNew(const U8* const bytes, const U64 size);
+void copyBytesFromTo(const U8* const source, const U64 size, U8* const dest);
 
 // FNV-1a hash algorithm
 U64 hash_FNV_1a(const U8* const bytes, const U64 size);

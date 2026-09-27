@@ -20,7 +20,7 @@ void del_errHandler(SErrHandler* eh)
 {
     if (eh != NULL)
     {
-        del_vecSError(eh->errors);
+        del_vec(eh->errors);
         free(eh);
     }
 }
@@ -52,14 +52,24 @@ static const String errMsgs[EErrorTypeEnd + 1] = {
     [EErrorTypeEnd] = { .len = 0, .bytes = (U8*) "" }
 };
 
-SError* new_error(EErrorType type, SToken tok)
+// =====================================================================
+// ============================== SError ===============================
+// =====================================================================
+SError* new_error(const EErrorType type, const UToken* const tok)
 {
     SError* err = (SError*) malloc(sizeof(SError));
-    ASSERT(err != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SError obj");
-    *( (SToken*) &(err->tok) ) = tok;
+    ASSERT(err != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "UError obj");
+    *( (UToken*) &(err->tok) ) = *tok;
     *( (EErrorType*) &(err->type) ) = type;
 
     return err;
+}
+
+void initError(SError* const err, const EErrorType type, const UToken* const tok)
+{
+    ASSERT(err != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "UError");
+    *( (UToken*) &(err->tok) ) = *tok;
+    *( (EErrorType*) &(err->type) ) = type;
 }
 
 void del_error(SError* err)
@@ -67,20 +77,30 @@ void del_error(SError* err)
     free(err);
 }
 
-// ===========================================================================
-// =============================== Vec<SError> ===============================
-// ===========================================================================
+// =====================================================================
+// ============================ Vec<SError> ============================
+// =====================================================================
 Vec* new_vecSError(const U64 len, const U64 cap)
 {
     return new_vec(len, cap, sizeof(SError));
 }
 
-void del_vecSError(Vec* vecSError)
+void vecSError_insert(Vec* const vt, const U64 idx, const SError* const err)
 {
-    del_vec(vecSError);
+    vec_insert(vt, idx, (const U8* const) err, sizeof(SError));
 }
 
-void vecSError_push(Vec* v, const SError* const err)
+void vecSError_push(Vec* const vt, const SError* const err)
 {
-    vec_push(v, sizeof(SError), (U8*) err);
+    vec_push(vt, sizeof(SError), (const U8* const) err);
+}
+
+SError* vecSError_pop(Vec* const vt)
+{
+    return (SError*) vec_pop(vt);
+}
+
+SError* vecSError_get(Vec* const vt, const U64 idx)
+{
+    return (SError*) vec_get(vt, idx);
 }

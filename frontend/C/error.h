@@ -24,13 +24,15 @@ const String* getErrMsg(EErrorType err);
 
 typedef struct SError
 {
-    const SToken tok;
+    const UToken tok;
     const EErrorType type;
 }
 SError;
 
-SError* new_error(EErrorType type, SToken tok);
+SError* new_error(const EErrorType type, const UToken* const tok);
+void initError(SError* err, const EErrorType type, const UToken* const tok);
 void del_error(SError* err);
+
 
 // ===========================================================================
 // =============================== SErrHandler ===============================
@@ -47,11 +49,14 @@ void del_errHandler(SErrHandler* eh);
 void eh_handle(SErrHandler* eh, SError* err);
 bool eh_isLimitHit(SErrHandler* eh);
 
-// ===========================================================================
-// =============================== Vec<SError> ===============================
-// ===========================================================================
+
+// =====================================================================
+// ============================ Vec<SError> ============================
+// =====================================================================
 Vec* new_vecSError(const U64 len, const U64 cap);
-void del_vecSError(Vec* vecSError);
-void vecSError_push(Vec* v, const SError* const err);
+void vecSError_insert(Vec* const vt, const U64 idx, const SError* const err);
+void vecSError_push(Vec* const vt, const SError* const err);
+SError* vecSError_pop(Vec* const vt);
+SError* vecSError_get(Vec* const vt, const U64 idx);
 
 #endif // FRONTEND_C_ERROR_H
