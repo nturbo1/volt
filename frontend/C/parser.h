@@ -17,7 +17,7 @@ SParser;
 
 SParser* new_parser(String* filepath);
 void del_parser(SParser* parser);
-SToken* parserNextToken(SParser* parser);
-SToken* parserPeekToken(SParser* parser);
+const UToken* parserNextToken(SParser* parser);
+const UToken* parserPeekToken(SParser* parser);
 
 #endif // FRONTEND_C_PARSER_H

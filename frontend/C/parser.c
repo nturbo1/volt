@@ -10,8 +10,11 @@
 #define PARSER_TOKEN_LOOKAHEAD_RING_CAP 5
 #define PARSER_ERROR_COUNT_LIMIT 5
 
+#define PARSER_TOKEN_LOOKAHEAD_RING_BUFFER_NOT_INITIALIZED \
+    "Parser token look-ahead ring buffer is not initialized!"
+
 // =====================================================================
-// ============================== SParser ==============================
+// =========================== STokenRing ==============================
 // =====================================================================
 /*
  * Maintains a fixed-size ring of tokens to be looked 
@@ -111,6 +114,14 @@ static void initParserTokLookAheadRing(SParser* parser)
     parser->tokLookAheadRing = tokLARing;
 }
 
+static void buildAST(SParser* parser)
+{
+    ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
+    ASSERT(parser->scanner != NULL, "Init the scanner before building a parser AST!");
+    
+    // TODO: Implement!
+}
+
 SParser* new_parser(String* filepath)
 {
     SScanner* scanner = new_scanner(filepath);
@@ -118,11 +129,13 @@ SParser* new_parser(String* filepath)
     SParser* parser = (SParser*) malloc(sizeof(SParser));
     ASSERT(parser != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SParser");
     parser->scanner = scanner;
+
     initParserTokLookAheadRing(parser);
+
     parser->errs = new_vecSError(0, PARSER_ERROR_COUNT_LIMIT);
     ASSERT(parser->errs != NULL, "Failed to create Parser errors vector.");
 
-    parser->ast = NULL; // TODO: Build AST!
+    buildAST(parser);
 
     return parser;
 }
@@ -136,18 +149,31 @@ void del_parser(SParser* parser)
     }
 }
 
-SToken* parserNextToken(SParser* parser)
+const UToken* parserNextToken(SParser* parser)
 {
     ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
-    // TODO: Implement!
-    return NULL;
+    nextTok(parser->scanner);
+    const UToken* const tok = &(parser->scanner->tok);
+    addNextTok(parser->tokLookAheadRing, tok);
+
+    if (parser->scanner->err != EERROR_TYPE_NO_ERROR)
+    {
+        SError err;
+        initError(&err, parser->scanner->err, tok);
+        vecSError_push(parser->errs, &err);
+    }
+
+    return tok;
 }
 
-SToken* parserPeekToken(SParser* parser)
+const UToken* parserPeekToken(SParser* parser)
 {
     ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
-    // TODO: Implement!
-    return NULL;
+    ASSERT(parser->tokLookAheadRing != NULL, PARSER_TOKEN_LOOKAHEAD_RING_BUFFER_NOT_INITIALIZED);
+    const UToken* const toks = parser->tokLookAheadRing->toks;
+    const U64 next = parser->tokLookAheadRing->next;
+
+    return &(toks[next]);
 }
 
 // static SDecl* parseDecl(SParser* parser)
@@ -168,14 +194,5 @@ SToken* parserPeekToken(SParser* parser)
 // {
 //     ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
 //     // TODO: Implement!
-//     return NULL;
-// }
-
-// static SParserAST* buildAST(SParser* parser)
-// {
-//     ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
-//     ASSERT(parser->scanner != NULL, "Init the scanner before building a parser AST!");
-//     // TODO: Implement!
-//
 //     return NULL;
 // }
