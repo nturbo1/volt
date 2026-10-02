@@ -3,6 +3,11 @@
 
 #include <stdlib.h>
 
+bool eTokenIsKeyword(const EToken tok)
+{
+    return eTokenKeywordBeg < tok && tok < eTokenKeywordEnd;
+}
+
 SToken* new_tok(const U64 col, const U64 ln, const EToken type)
 {
     SToken* tok = (SToken*) malloc(sizeof(SToken));

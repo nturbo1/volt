@@ -165,6 +165,8 @@ typedef enum EToken
 }
 EToken;
 
+bool eTokenIsKeyword(const EToken tok);
+
 const char* eTokenToCStr(EToken tok);
 
 typedef struct SToken

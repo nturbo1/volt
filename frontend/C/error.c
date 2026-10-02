@@ -4,14 +4,14 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 
-#define DEFAULT_EH_ERR_LIMIT 20
-SErrHandler* new_errHandler()
+SErrHandler* new_errHandler(const U64 errCountMax)
 {
     SErrHandler* eh = (SErrHandler*) malloc(sizeof(SErrHandler));
     ASSERT(eh != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SErrHandler obj");
-    *( (U64*)&(eh->errLimit) ) = DEFAULT_EH_ERR_LIMIT;
-    eh->errors = new_vecSError(0, eh->errLimit);
+    *( (U64*)&(eh->errLimit) ) = errCountMax;
+    eh->errs = new_vecSError(0, eh->errLimit);
 
     return eh;
 }
@@ -20,20 +20,22 @@ void del_errHandler(SErrHandler* eh)
 {
     if (eh != NULL)
     {
-        del_vec(eh->errors);
+        del_vec(eh->errs);
         free(eh);
     }
 }
 
-void eh_handle(SErrHandler* eh, SError* err)
+bool eh_handle(SErrHandler* const eh, const SError* const err)
 {
-    if (eh->errors->len < eh->errLimit)
-        vecSError_push(eh->errors, err);
+    if (eh->errs->len < eh->errLimit)
+        vecSError_push(eh->errs, err);
+
+    return eh_isLimitHit(eh);
 }
 
-bool eh_isLimitHit(SErrHandler* eh)
+bool eh_isLimitHit(const SErrHandler* const eh)
 {
-    if (eh->errors->len >= eh->errLimit)
+    if (eh->errs->len >= eh->errLimit)
         return true;
 
     return false;
@@ -41,9 +43,40 @@ bool eh_isLimitHit(SErrHandler* eh)
 
 static const String errMsgs[EErrorTypeEnd + 1];
 
-const String* getErrMsg(EErrorType err)
+const String* getErrMsg(const EErrorType err)
 {
     return &errMsgs[err];
+}
+
+#define ERROR_MSG_OUTPUT_FMT "%s:%zu:%zu: error: %s"
+void eh_printErrs(const SErrHandler* const eh,
+                  const String* const outFilepath,
+                  const String* const srcFilepath)
+{
+    ASSERT(eh, NULL_POINTER_ERROR_MSG_FORMAT, "SErrHandler");
+    ASSERT(srcFilepath, "NULL pointer to the source filepath String was passed.");
+    ASSERT_DBG(outFilepath != NULL,
+               "NULL pointer to the output filepath String was passed.");
+    FILE* outFile = NULL;
+    if (outFilepath != NULL)
+        outFile = fopen((const char*) outFilepath->bytes, "w");
+    else
+        outFile = stdout;
+
+    for (U64 i = 0; i < eh->errs->len; i++)
+    {
+        SError* err = vecSError_get(eh->errs, i);
+        const String* msg = getErrMsg(err->type);
+        fprintf(outFile,
+                ERROR_MSG_OUTPUT_FMT,
+                (const char*) srcFilepath->bytes,
+                err->tok.base.ln,
+                err->tok.base.col,
+                (const char*) msg->bytes);
+        fprintf(outFile, "\n");
+    }
+
+    fflush(outFile);
 }
 
 static const String errMsgs[EErrorTypeEnd + 1] = {

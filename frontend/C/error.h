@@ -20,7 +20,7 @@ typedef enum EErrorType
 }
 EErrorType;
 
-const String* getErrMsg(EErrorType err);
+const String* getErrMsg(const EErrorType err);
 
 typedef struct SError
 {
@@ -39,16 +39,29 @@ void del_error(SError* err);
 // ===========================================================================
 typedef struct SErrHandler
 {
-    Vec* errors;
+    Vec* errs;
     const U64 errLimit; // Max # of errors to be tolerated during compilation
 }
 SErrHandler;
 
 SErrHandler* new_errHandler();
 void del_errHandler(SErrHandler* eh);
-void eh_handle(SErrHandler* eh, SError* err);
-bool eh_isLimitHit(SErrHandler* eh);
 
+/*
+ * @return True if the error has been handled successfully or
+ *         False if the error count limit has been reached
+ */
+bool eh_handle(SErrHandler* const eh, const SError* const err);
+
+/*
+ * @return True if the error count limit has been reached and
+ *         False otherwise.
+ */
+bool eh_isLimitHit(const SErrHandler* const eh);
+
+void eh_printErrs(const SErrHandler* const eh,
+                  const String* const outFilepath,
+                  const String* const srcFilepath);
 
 // =====================================================================
 // ============================ Vec<SError> ============================
