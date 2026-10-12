@@ -169,6 +169,8 @@ bool eTokenIsKeyword(const EToken tok);
 
 const char* eTokenToCStr(EToken tok);
 
+bool eTokenIsTypeSpecifier(const EToken tok);
+
 typedef struct SToken
 {
     U64 col;
@@ -201,8 +203,17 @@ typedef union UToken
 UToken;
 
 SToken* new_tok(const U64 col, const U64 ln, const EToken type);
-STokenIdent* new_tokIdent(const U64 col, const U64 ln, const EToken type, String* const lexeme);
-STokenNum* new_tokNum(const U64 col, const U64 ln, const EToken type, const U64 val);
+
+STokenIdent* new_tokIdent(const U64 col,
+                          const U64 ln,
+                          const EToken type,
+                          String* const lexeme);
+
+STokenNum* new_tokNum(const U64 col,
+                      const U64 ln,
+                      const EToken type,
+                      const U64 val);
+
 void del_tok(SToken* tok);
 void del_tokIdent(STokenIdent* tok);
 void del_tokNum(STokenNum* tok);

@@ -21,8 +21,45 @@ SParser;
 
 SParser* new_parser(const String* const filepath);
 void del_parser(SParser* parser);
+
+/*
+ * - Returns the next nth token in the tokens window where
+ *       n = 0 -> next, n = 1 -> next + 1, n = 2 -> next + 2, ... .
+ *
+ * - It asserts that `n` is less than the token look-ahead buffer size.
+ *
+ * - If `next + n` is greater than the end position of the tokens window
+ *   buffer, then it will return `ETOKEN_EOF` token.
+ *
+ * - It does NOT update the token position or the tokens window.
+ *
+ * @return the next nth token
+ */
+const UToken* parserPeekNextNToken(SParser* const parser, const U64 n);
+
+/*
+ * Advances the token position in the tokens window buffer after
+ * returning the next token.
+ *
+ * @return the next token
+ */
 const UToken* parserNextToken(SParser* const parser);
-const UToken* parserPeekToken(SParser* const parser);
+
+/*
+ * - Returns the previous nth token in the tokens window where
+ *       n = 0 -> next - 1, n = 1 -> next - 2, n = 2 -> next - 3, ... .
+ *
+ * - It asserts that `n` is less than the token look-ahead buffer size.
+ *
+ * - If there are less than `n + 1` tokens before `next`, then it will
+ *   reutrn `NULL`.
+ *
+ * - It does NOT update the token position or the tokens window.
+ *
+ * @return the previous nth token
+ */
+const UToken* parserPeekPrevNToken(SParser* const parser, const U64 n);
+
 void parserBuildAST(SParser* const parser);
 
 // =====================================================================

@@ -8,6 +8,33 @@ bool eTokenIsKeyword(const EToken tok)
     return eTokenKeywordBeg < tok && tok < eTokenKeywordEnd;
 }
 
+bool eTokenIsTypeSpecifier(const EToken tok)
+{
+    ASSERT_DBG(eTokenBeg < tok && tok < eTokenEnd,
+               "Out of range EToken value was passed: %d.",
+               tok);
+
+    switch(tok)
+    {
+        case ETOKEN_STRUCT:
+        case ETOKEN_UNION:
+        case ETOKEN_ENUM:
+        case ETOKEN_CONST:
+        case ETOKEN_VOID:
+        case ETOKEN_SIGNED:
+        case ETOKEN_UNSIGNED:
+        case ETOKEN_CHAR:
+        case ETOKEN_SHORT:
+        case ETOKEN_INT:
+        case ETOKEN_LONG:
+        case ETOKEN_FLOAT:
+        case ETOKEN_DOUBLE:
+            return true;
+        default:
+            return false;
+    }
+}
+
 SToken* new_tok(const U64 col, const U64 ln, const EToken type)
 {
     SToken* tok = (SToken*) malloc(sizeof(SToken));

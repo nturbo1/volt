@@ -3,6 +3,7 @@ add_library(c_frontend
     token.c
     error.c
     parser.c
+    ast.c
 )
 target_link_libraries(c_frontend
     PUBLIC

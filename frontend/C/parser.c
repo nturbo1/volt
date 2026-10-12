@@ -135,6 +135,25 @@ void del_parser(SParser* parser)
     }
 }
 
+const UToken* parserPeekNextNToken(SParser* const parser, const U64 n)
+{
+    ASSERT(parser, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
+    ASSERT(parser->tokWind, "Parser tokens window is not initialized!");
+    ASSERT_DBG(parser->tokWind->len % 2 == 0,
+               PARSER_INCORRECT_TOKEN_WINDOW_BUFFER_SIZE);
+    const U64 tokLookAheadSize = parser->tokWind->len / 2;
+    ASSERT(n < tokLookAheadSize,
+           "%zu is greater than the token look-ahead size %zu.",
+           n,
+           tokLookAheadSize);
+
+    const U64 next = parser->tokWind->next;
+    const U64 end = parser->tokWind->end;
+    const U64 nextNthTokPos = (next + n) % tokLookAheadSize;
+
+    return &( parser->tokWind->toks[nextNthTokPos > end ? end : nextNthTokPos] );
+}
+
 const UToken* parserNextToken(SParser* const parser)
 {
     ASSERT(parser, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
@@ -159,6 +178,38 @@ const UToken* parserNextToken(SParser* const parser)
     return pNextTok;
 }
 
+const UToken* parserPeekPrevNToken(SParser* const parser, const U64 n)
+{
+    ASSERT(parser, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
+    ASSERT(parser->tokWind, "Parser tokens window is not initialized!");
+    const STokWind* tw = parser->tokWind;
+    ASSERT_DBG(tw->len % 2 == 0,
+               PARSER_INCORRECT_TOKEN_WINDOW_BUFFER_SIZE);
+    const U64 twLen = tw->len;
+    const U64 tokLookBackSize = twLen / 2;
+    ASSERT(tokLookBackSize > n,
+           "Peeking back previous %zuth token violates the token look-back size "
+           "%zu and goes out of bounds of the tokens window buffer.",
+           n + 1,
+           tokLookBackSize);
+
+    const U64 next = tw->next;
+    const U64 end = tw->end;
+    U64 peekablePrevTokCount = tokLookBackSize;
+
+    // if # processed tokens <= tokLookBackSize
+    if (next < end && end > (twLen - 1))
+        peekablePrevTokCount = next;
+
+    const U64 peekOffset = n + 1;
+    if ( peekablePrevTokCount < peekOffset )
+        return NULL;
+
+    const U64 peekPos = (next - peekOffset + twLen) % twLen;
+
+    return &( tw->toks[peekPos] );
+}
+
 const UToken* parserPeekToken(SParser* const parser)
 {
     ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
@@ -170,39 +221,117 @@ const UToken* parserPeekToken(SParser* const parser)
     return &(toks[next]);
 }
 
-// static SDecl* parseDecl(SParser* const parser)
-// {
-//     ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
-//     // TODO: Implement!
-//     return NULL;
-// }
-//
-// static SExpr* parseExpr(SParser* const parser)
-// {
-//     ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
-//     // TODO: Implement!
-//     return NULL;
-// }
-//
-// static SStmt* parseStmt(SParser* const parser)
-// {
-//     ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
-//     // TODO: Implement!
-//     return NULL;
-// }
+static SStructDecl* parseStructDecl(SParser* const parser)
+{
+    ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
+    // TODO: Implement!
+    return NULL;
+}
+
+static SEnumDecl* parseEnumDecl(SParser* const parser)
+{
+    ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
+    // TODO: Implement!
+    return NULL;
+}
+
+static SUnionDecl* parseUnionDecl(SParser* const parser)
+{
+    ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
+    // TODO: Implement!
+    return NULL;
+}
+
+static SFuncDecl* parseFuncDecl(SParser* const parser)
+{
+    ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
+    // TODO: Implement!
+    return NULL;
+}
+
+static SVarDecl* parseVarDecl(SParser* const parser)
+{
+    ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
+    // TODO: Implement!
+    return NULL;
+}
+
+static SDecl* parseDecl(SParser* const parser)
+{
+    ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
+
+    U64 peekNextLvl = 0;
+    while (true)
+    {
+        const UToken* tok = parserPeekNextNToken(parser, peekNextLvl);
+        const EToken tokType = tok->base.type;
+        switch (tokType)
+        {
+        case ETOKEN_STRUCT:
+            return (SDecl*) parseStructDecl(parser);
+
+        case ETOKEN_UNION:
+            return (SDecl*) parseUnionDecl(parser);
+
+        case ETOKEN_ENUM:
+            return (SDecl*) parseEnumDecl(parser);
+
+        case ETOKEN_INLINE:
+            return (SDecl*) parseFuncDecl(parser);
+
+        case ETOKEN_IDENT:
+
+        case ETOKEN_STATIC:
+        case ETOKEN_EXTERN:
+        case ETOKEN_TYPEDEF:
+        case ETOKEN_VOLATILE:
+            return (SDecl*) parseDecl(parser);
+        default:
+            if (eTokenIsTypeSpecifier(tokType))
+            {}
+            return NULL;
+        }
+    }
+
+    return NULL;
+}
+
+static SExpr* parseExpr(SParser* const parser)
+{
+    ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
+    // TODO: Implement!
+    return NULL;
+}
+
+static SStmt* parseStmt(SParser* const parser)
+{
+    ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
+    // TODO: Implement!
+    return NULL;
+}
 
 void parserBuildAST(SParser* const parser)
 {
     ASSERT(parser != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SParser");
     ASSERT(parser->scanner != NULL, "Init the scanner before building a parser AST!");
     
-    // const UToken* tok = parserPeekToken(parser);
-    // if (eTokenIsKeyword(tok->base.type))
-    // {
-    // }
-    // switch(tok->base.type)
-    // {
-    // case ETOKEN_INVALID_IDENT:
-    // }
+    const UToken* tok = parserPeekToken(parser);
+    if (tok->base.type == ETOKEN_EOF)
+        return;
 
+    SParserAST* ast = (SParserAST*) malloc(sizeof(SParserAST));
+    
+    while (tok->base.type != ETOKEN_EOF)
+    {
+        if (eTokenIsKeyword(tok->base.type))
+        {
+            SDecl* decl = parseDecl(parser);
+        }
+        else
+        {
+            // TODO: parse other type of tokens here...
+        }
+
+        tok = parserPeekToken(parser);
+    }
 }
