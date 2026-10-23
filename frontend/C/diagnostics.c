@@ -1,4 +1,4 @@
-#include "error.h"
+#include "diagnostics.h"
 #include "base_inc.h"
 
 #include <stddef.h>
@@ -6,7 +6,36 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-SErrHandler* new_errHandler(const U64 errCountMax)
+
+// ===========================================================================
+// =============================== SDiagnostics ==============================
+// ===========================================================================
+
+SDiagnostics* new_sDiagnostics(const U64 errCountMax, FILE* const out)
+{
+    SDiagnostics* diags = (SDiagnostics*) malloc(sizeof(SDiagnostics));
+    ASSERT(diags, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SDiagnostics obj");
+    diags->eh = new_sErrHandler(errCountMax);
+    diags->out = out ? out : stderr;
+
+    return diags;
+}
+
+void del_sDiagnostics(SDiagnostics* diags)
+{
+    if (diags)
+    {
+        del_sErrHandler( (SErrHandler*) (diags->eh) );
+        fclose(diags->out);
+        free(diags);
+    }
+}
+
+
+// ===========================================================================
+// =============================== SErrHandler ===============================
+// ===========================================================================
+SErrHandler* new_sErrHandler(const U64 errCountMax)
 {
     SErrHandler* eh = (SErrHandler*) malloc(sizeof(SErrHandler));
     ASSERT(eh != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SErrHandler obj");
@@ -16,7 +45,7 @@ SErrHandler* new_errHandler(const U64 errCountMax)
     return eh;
 }
 
-void del_errHandler(SErrHandler* eh)
+void del_sErrHandler(SErrHandler* eh)
 {
     if (eh != NULL)
     {
@@ -25,7 +54,7 @@ void del_errHandler(SErrHandler* eh)
     }
 }
 
-bool eh_handle(SErrHandler* const eh, const SError* const err)
+Bool eh_handle(SErrHandler* const eh, const SError* const err)
 {
     if (eh->errs->len < eh->errLimit)
         vecSError_push(eh->errs, err);
@@ -33,7 +62,7 @@ bool eh_handle(SErrHandler* const eh, const SError* const err)
     return eh_isLimitHit(eh);
 }
 
-bool eh_isLimitHit(const SErrHandler* const eh)
+Bool eh_isLimitHit(const SErrHandler* const eh)
 {
     if (eh->errs->len >= eh->errLimit)
         return true;
@@ -88,21 +117,38 @@ static const String errMsgs[EErrorTypeEnd + 1] = {
 // =====================================================================
 // ============================== SError ===============================
 // =====================================================================
-SError* new_error(const EErrorType type, const UToken* const tok)
+SError* new_error(const EErrorType type, const UToken* const tok, const EErrorLevel lvl)
 {
     SError* err = (SError*) malloc(sizeof(SError));
     ASSERT(err != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "UError obj");
     *( (UToken*) &(err->tok) ) = *tok;
     *( (EErrorType*) &(err->type) ) = type;
+    *( (EErrorLevel*) &(err->lvl) ) = lvl;
 
     return err;
 }
 
-void initError(SError* const err, const EErrorType type, const UToken* const tok)
+void initError(SError* const err,
+               const EErrorType type,
+               const UToken* const tok,
+               const EErrorLevel lvl)
 {
-    ASSERT(err != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "UError");
-    *( (UToken*) &(err->tok) ) = *tok;
+    ASSERT(err, NULL_POINTER_ERROR_MSG_FORMAT, "UError");
+    ASSERT(tok, NULL_POINTER_ERROR_MSG_FORMAT, "UToken");
+    switch(tok->base.type)
+    {
+    case ETOKEN_IDENT:
+         = new_sTokIdent(tok->base.col,
+                                                  tok->base.ln,
+                                                  tok->base.type,
+                                                  tok->ident.lexeme);
+        break;
+
+    case ETOKEN_FLOAT_LIT:
+    case ETOKEN_INT_LIT:
+    }
     *( (EErrorType*) &(err->type) ) = type;
+    *( (EErrorLevel*) &(err->lvl) ) = lvl;
 }
 
 void del_error(SError* err)

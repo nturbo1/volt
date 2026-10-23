@@ -1,0 +1,719 @@
+/* ============================================================
+ * C99 STRING LITERAL TEST CORPUS
+ *
+ * Covers:
+ *   - ordinary strings
+ *   - empty strings
+ *   - whitespace
+ *   - punctuation
+ *   - escaped characters
+ *   - octal escapes
+ *   - hexadecimal escapes
+ *   - adjacent string literals
+ *   - long strings
+ *   - strings containing numbers/operators/C syntax
+ *   - multiple strings
+ *   - strings containing comments
+ *   - line-oriented cases
+ *
+ * C99 does NOT have C++ raw strings.
+ * ============================================================ */
+
+
+/* ------------------------------------------------------------
+ * 1. EMPTY STRING
+ * ------------------------------------------------------------ */
+
+""
+""
+""
+""
+
+
+/* ------------------------------------------------------------
+ * 2. BASIC STRINGS
+ * ------------------------------------------------------------ */
+
+"a"
+"b"
+"c"
+"hello"
+"Hello"
+"HELLO"
+"hello world"
+"Hello, world!"
+"test"
+"testing"
+"string"
+"string literal"
+
+
+/* ------------------------------------------------------------
+ * 3. SINGLE CHARACTERS INSIDE STRINGS
+ * ------------------------------------------------------------ */
+
+"a"
+"b"
+"0"
+"1"
+"9"
+"_"
+"+"
+"-"
+"*"
+"/"
+"="
+"<"
+">"
+"!"
+"?"
+"#"
+"$"
+"%"
+"&"
+"|"
+"^"
+"~"
+"("
+")"
+"["
+"]"
+"{"
+"}"
+","
+"."
+":"
+";"
+
+
+/* ------------------------------------------------------------
+ * 4. WHITESPACE INSIDE STRINGS
+ * ------------------------------------------------------------ */
+
+" "
+"  "
+"   "
+"\t"
+"\t\t"
+" \t "
+"hello world"
+"hello  world"
+" hello"
+"hello "
+" hello "
+"hello\tworld"
+"hello\t\tworld"
+
+
+/* ------------------------------------------------------------
+ * 5. ESCAPED QUOTATION MARK
+ * ------------------------------------------------------------ */
+
+"\""
+"hello \"world\""
+"She said: \"hello\""
+"\"hello\""
+"quote: \""
+"\" quote \""
+
+
+/* ------------------------------------------------------------
+ * 6. ESCAPED BACKSLASH
+ * ------------------------------------------------------------ */
+
+"\\"
+"\\\\"
+"hello\\world"
+"hello\\\\world"
+"backslash: \\"
+"\\hello\\"
+"\\\\hello\\\\"
+
+
+/* ------------------------------------------------------------
+ * 7. STANDARD SIMPLE ESCAPE SEQUENCES
+ *
+ * C99 simple escape sequences:
+ *
+ *   \'
+ *   \"
+ *   \?
+ *   \\
+ *   \a
+ *   \b
+ *   \f
+ *   \n
+ *   \r
+ *   \t
+ *   \v
+ * ------------------------------------------------------------ */
+
+"\'"
+"\""
+"\?"
+"\\"
+"\a"
+"\b"
+"\f"
+"\n"
+"\r"
+"\t"
+"\v"
+
+
+/* ------------------------------------------------------------
+ * 8. ESCAPES IN CONTEXT
+ * ------------------------------------------------------------ */
+
+"hello\nworld"
+"hello\tworld"
+"hello\rworld"
+"hello\bworld"
+"hello\fworld"
+"hello\vworld"
+"hello\aworld"
+
+"line1\nline2"
+"line1\r\nline2"
+"column1\tcolumn2"
+
+"before\\after"
+"before\"after"
+"before\'after"
+"before\?after"
+
+
+/* ------------------------------------------------------------
+ * 9. MULTIPLE ESCAPES
+ * ------------------------------------------------------------ */
+
+"\n\n\n"
+"\t\t\t"
+"\\\"\\\"\\\""
+"\"\"\""
+"\\n\\t\\r"
+"\n\t\r"
+"\\\n"
+"\\\\n"
+"\\\\t"
+
+"hello\nworld\t!"
+"\"hello\""
+"\\hello\\"
+"\\\"hello\\\""
+
+
+/* ------------------------------------------------------------
+ * 10. OCTAL ESCAPE SEQUENCES
+ *
+ * C99:
+ *   \ followed by 1, 2, or 3 octal digits
+ * ------------------------------------------------------------ */
+
+"\0"
+"\00"
+"\000"
+
+"\1"
+"\01"
+"\001"
+
+"\7"
+"\07"
+"\007"
+
+"\10"
+"\010"
+"\100"
+
+"\11"
+"\011"
+"\101"
+
+"\12"
+"\012"
+"\102"
+
+"\77"
+"\077"
+"\177"
+
+"\123"
+"\456"
+"\777"
+
+
+/* ------------------------------------------------------------
+ * 11. OCTAL ESCAPES IN TEXT
+ * ------------------------------------------------------------ */
+
+"hello\0world"
+"hello\001world"
+"hello\101world"
+"hello\123world"
+"hello\377world"
+
+"start\0end"
+"start\123end"
+"start\777end"
+
+
+/* ------------------------------------------------------------
+ * 12. IMPORTANT OCTAL BOUNDARY CASES
+ *
+ * An octal escape consumes at most three octal digits.
+ * ------------------------------------------------------------ */
+
+"\1234"
+"\12345"
+"\7777"
+"\0000"
+"\0012"
+"\0078"
+
+"abc\123def"
+"abc\1234def"
+"abc\12345def"
+
+
+/* ------------------------------------------------------------
+ * 13. HEXADECIMAL ESCAPE SEQUENCES
+ *
+ * C99:
+ *   \x followed by one or more hexadecimal digits
+ * ------------------------------------------------------------ */
+
+"\x0"
+"\x1"
+"\x7"
+"\x9"
+"\xa"
+"\xb"
+"\xc"
+"\xd"
+"\xe"
+"\xf"
+
+"\xA"
+"\xB"
+"\xC"
+"\xD"
+"\xE"
+"\xF"
+
+"\x00"
+"\x01"
+"\x7f"
+"\xff"
+
+"\x10"
+"\x20"
+"\x41"
+"\x42"
+"\x61"
+"\x62"
+
+"\x123"
+"\x1234"
+"\xabcdef"
+"\xABCDEF"
+"\x123456789"
+
+
+/* ------------------------------------------------------------
+ * 14. HEX ESCAPES IN TEXT
+ * ------------------------------------------------------------ */
+
+"hello\x41world"
+"hello\x61world"
+"hello\x123world"
+"start\x00end"
+"start\xffend"
+"start\xabcdefend"
+
+
+/* ------------------------------------------------------------
+ * 15. IMPORTANT HEX ESCAPE BOUNDARIES
+ *
+ * Unlike octal escapes, hexadecimal escapes consume all
+ * consecutive hexadecimal digits.
+ * ------------------------------------------------------------ */
+
+"\x1234"
+"\x123456"
+"\xabcdef"
+"\xABCDEF"
+"\x123abcDEF"
+
+"abc\x123def"
+"abc\x1234def"
+"abc\x123456def"
+
+
+/* ------------------------------------------------------------
+ * 16. MIXED ESCAPE TYPES
+ * ------------------------------------------------------------ */
+
+"\n\123\x41"
+"\t\101\x42"
+"\r\102\x43"
+"\0\000\x00"
+
+"hello\n\123\x41world"
+"\\\n\123\x41"
+"\"\101\x42\""
+
+
+/* ------------------------------------------------------------
+ * 17. STRINGS CONTAINING C SYNTAX
+ * ------------------------------------------------------------ */
+
+"int x = 42;"
+"return 0;"
+"if (x > 0)"
+"while (x != 0)"
+"for (i = 0; i < 10; ++i)"
+"printf(\"hello\");"
+
+"#include <stdio.h>"
+"#define X 42"
+
+"/* comment */"
+"// comment"
+
+"int main(void)"
+"char *str = \"hello\";"
+
+
+/* ------------------------------------------------------------
+ * 18. STRINGS CONTAINING NUMBERS
+ * ------------------------------------------------------------ */
+
+"0"
+"1"
+"42"
+"123456789"
+"0xFF"
+"0755"
+"3.14159"
+"1e10"
+"1.0e-10"
+
+"123 + 456"
+"3.14 * 2.71"
+"0xFF & 0x0F"
+
+
+/* ------------------------------------------------------------
+ * 19. STRINGS CONTAINING QUOTATION MARKS
+ * ------------------------------------------------------------ */
+
+"\""
+"\"\""
+"\"\"\""
+
+"hello \" world"
+"hello \"world\""
+"\"hello\" world"
+"\"hello\" \"world\""
+
+"She said \"hello\""
+"He said \"yes\" and she said \"no\""
+
+
+/* ------------------------------------------------------------
+ * 20. STRINGS CONTAINING BACKSLASHES
+ * ------------------------------------------------------------ */
+
+"\\"
+"\\\\"
+"\\\\\\"
+"\\\\\\\\"
+
+"C:\\"
+"C:\\Users"
+"C:\\Users\\test"
+"C:\\Program Files\\test"
+
+"path\\to\\file"
+"foo\\bar\\baz"
+
+
+/* ------------------------------------------------------------
+ * 21. WINDOWS-STYLE PATHS
+ * ------------------------------------------------------------ */
+
+"C:\\Windows"
+"C:\\Windows\\System32"
+"C:\\Program Files\\MyApp"
+"C:\\Users\\user\\Documents\\file.txt"
+
+
+/* ------------------------------------------------------------
+ * 22. URL-LIKE STRINGS
+ * ------------------------------------------------------------ */
+
+"http://example.com"
+"https://example.com"
+"ftp://example.com"
+"https://example.com/path?q=1&x=2"
+
+
+/* ------------------------------------------------------------
+ * 23. FORMAT-STRING-LIKE TEXT
+ * ------------------------------------------------------------ */
+
+"%d"
+"%u"
+"%ld"
+"%lld"
+"%f"
+"%lf"
+"%s"
+"%c"
+"hello %s"
+"value = %d"
+"value = %f"
+"%d %d %d"
+"%s: %d"
+
+
+/* ------------------------------------------------------------
+ * 24. PUNCTUATION-HEAVY STRINGS
+ * ------------------------------------------------------------ */
+
+"()"
+"[]"
+"{}"
+"<>"
+"<<"
+">>"
+"=="
+"!="
+"<="
+">="
+"&&"
+"||"
+"++"
+"--"
+"+="
+"-="
+"*="
+"/="
+"%="
+
+"()[]{}<>"
+"+-*/%=<>!&|^~"
+",.;:?#!"
+"((()))"
+"[[[]]]"
+"{{{}}}"
+
+
+/* ------------------------------------------------------------
+ * 25. COMMENT-LIKE TEXT
+ *
+ * These are characters inside strings and therefore are NOT
+ * comments.
+ * ------------------------------------------------------------ */
+
+"/*"
+"*/"
+"//"
+"/* comment */"
+"// comment"
+"/* not a comment */"
+"// not a comment"
+
+"before /* comment */ after"
+"before // comment after"
+
+
+/* ------------------------------------------------------------
+ * 26. NEWLINE ESCAPES
+ * ------------------------------------------------------------ */
+
+"line one\nline two"
+"line one\nline two\nline three"
+
+"\n"
+"\n\n"
+"\n\n\n"
+
+"first\nsecond\nthird\nfourth"
+
+
+/* ------------------------------------------------------------
+ * 27. TAB / CONTROL-STYLE ESCAPES
+ * ------------------------------------------------------------ */
+
+"\t"
+"\t\t"
+"one\ttwo"
+"one\t\ttwo"
+"\r"
+"\r\r"
+"\f"
+"\f\f"
+"\v"
+"\v\v"
+"\b"
+"\b\b"
+"\a"
+"\a\a"
+
+
+/* ------------------------------------------------------------
+ * 28. LONG STRINGS
+ * ------------------------------------------------------------ */
+
+"abcdefghijklmnopqrstuvwxyz"
+"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+"012345678901234567890123456789"
+
+"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+"The quick brown fox jumps over the lazy dog."
+
+"This is a longer string literal used to test scanner buffering and lexeme handling."
+
+"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+"123456789012345678901234567890123456789012345678901234567890"
+
+
+/* ------------------------------------------------------------
+ * 29. EMPTY / WHITESPACE / ESCAPE COMBINATIONS
+ * ------------------------------------------------------------ */
+
+""
+" "
+"\t"
+"\n"
+"\r"
+" \t\n\r "
+" \n "
+"\t\n\t"
+"\\"
+"\""
+"\0"
+"\x00"
+
+
+/* ------------------------------------------------------------
+ * 30. ADJACENT STRING LITERALS
+ *
+ * In C, adjacent string literals are concatenated during
+ * translation. The lexer should nevertheless recognize each
+ * string literal as a separate preprocessing token / token
+ * according to your scanner design.
+ * ------------------------------------------------------------ */
+
+"hello" "world"
+"a" "b"
+"hello " "world"
+"foo" "bar" "baz"
+
+"" ""
+"" "hello"
+"hello" ""
+
+"a" "b" "c" "d" "e"
+
+"hello\n" "world\n"
+"foo" "\x41" "bar"
+"one" "two" "three"
+
+
+/* ------------------------------------------------------------
+ * 31. ADJACENT STRINGS WITHOUT WHITESPACE
+ * ------------------------------------------------------------ */
+
+"hello""world"
+"a""b"
+""""""
+"foo""bar""baz"
+
+"hello"" ""world"
+"one""two""three"
+
+
+/* ------------------------------------------------------------
+ * 32. STRING LITERALS NEXT TO OTHER TOKENS
+ * ------------------------------------------------------------ */
+
+"hello"+1
+"hello"-1
+"hello"==x
+"hello"!=x
+"hello"[0]
+"hello"(x)
+"hello";
+"hello",
+"hello":
+
+
+/* ------------------------------------------------------------
+ * 33. MULTIPLE STRING LITERALS ON ONE LINE
+ * ------------------------------------------------------------ */
+
+"one" "two" "three"
+"hello" "world" "!"
+"a" "b" "c" "d" "e" "f" "g"
+
+
+/* ------------------------------------------------------------
+ * 34. STRINGS WITH ESCAPES NEXT TO TOKENS
+ * ------------------------------------------------------------ */
+
+"\n"+1
+"\t"+2
+"\x41"+3
+"\101"+4
+"\""+5
+"\\"+6
+
+
+/* ------------------------------------------------------------
+ * 35. REALISTIC C STRING EXAMPLES
+ * ------------------------------------------------------------ */
+
+"Hello, world!"
+
+"Error: file not found"
+
+"Usage: program [options]"
+
+"Enter your name: "
+
+"Press Enter to continue..."
+
+"Error code: 404"
+
+"username=%s"
+
+"result=%d\n"
+
+"temperature=%0.2f"
+
+"[%d] %s\n"
+
+"Path: C:\\Users\\user\\file.txt"
+
+"She said: \"Hello, world!\""
+
+"First line\nSecond line\nThird line"
+
+
+/* ------------------------------------------------------------
+ * 36. STRINGS CONTAINING ALMOST EVERYTHING
+ * ------------------------------------------------------------ */
+
+"abc123_ABC"
+"hello world 123"
+"!@#$%^&*()_+-=[]{}|;:',.<>/?"
+"\"\\\n\t\r"
+"int x = 42; /* not a comment */"
+"http://example.com/?x=1&y=2"
+"C:\\Users\\user\\file.txt"
+"0xFF + 3.14 - 100"

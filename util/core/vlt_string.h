@@ -37,7 +37,7 @@ String* stringCopy(const String* const source, const U64 startIdx, const U64 end
 void del_string(String* str);
 
 // Compares two strings and returns true if they're equal
-bool stringEqual(String* s1, String* s2);
+Bool stringEqual(String* s1, String* s2);
 
 // Returns a character at a given index in a given String
 U8 stringCharAt(String* s, U64 idx);

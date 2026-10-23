@@ -1,19 +1,20 @@
-add_library(volt_c_base
-    base.c
+add_library(volt_core_util
     vlt_string.c
     vlt_vector.c
     vlt_hashmap.c
     vlt_stringBuilder.c
-    vlt_files.c
+    vlt_hash.c
+    vlt_bytes.c
 )
-target_include_directories(volt_c_base
+target_include_directories(volt_core_util
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(volt_c_base
+target_link_libraries(volt_core_util
     PUBLIC
     compiler_warnings
+    volt_config
 )
 
 # TEST
@@ -26,5 +27,5 @@ target_sources(execvctest
 )
 target_link_libraries(execvctest
     PRIVATE
-    volt_c_base
+    volt_core_util
 )

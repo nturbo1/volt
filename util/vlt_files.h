@@ -1,7 +1,7 @@
 #ifndef BASE_FILES_H
 #define BASE_FILES_H
 
-#include "vlt_string.h"
+#include "core/vlt_string.h"
 
 // Returns a filepath that ends with the directory name.
 // For instance:
@@ -13,6 +13,6 @@
 //
 //    if NULL was given,
 //    then returns NULL
-String* dirName(const String* const filepath);
+String *dirName(const String *const filepath);
 
 #endif // BASE_FILES_H

@@ -6,13 +6,18 @@ typedef enum EASTNodeType
     EASTNODETYPE_DECL,
     EASTNODETYPE_EXPR,
     EASTNODETYPE_STMT,
+    EASTNODETYPE_STORAGE_CLASS,
+    EASTNODETYPE_TYPE_SPECIFIER,
+    EASTNODETYPE_TYPE_QUALIFIER,
+    EASTNODETYPE_FUNC_SPECIFIER,
+    EASTNODETYPE_DECL_SPECIFIER,
 }
 EASTNodeType;
 
 typedef struct SParserASTNode
 {
-    UToken tok;
-    EASTNodeType type;    
+    const UToken tok;
+    const EASTNodeType type;    
 }
 SParserASTNode;
 
@@ -48,6 +53,7 @@ typedef struct STypeQual
     ETypeQualType type;
 }
 STypeQual;
+void initSTypeQual(STypeQual* const typeQual, const UToken* const tok);
 
 typedef enum ETypeSpecifierType
 {
@@ -74,12 +80,14 @@ typedef struct STypeSpecifier
     const ETypeSpecifierType type;
 }
 STypeSpecifier;
+void initSTypeSpecifier(STypeSpecifier* const typeSp, const UToken* const tok);
 
 typedef struct SFuncSpecifier
 {
     const SParserASTNode node;
 }
 SFuncSpecifier;
+void initSFuncSpecifier(SFuncSpecifier* const funcSp, const UToken* const tok);
 
 typedef enum EStorageClassType
 {
@@ -97,6 +105,7 @@ typedef struct SStorageClass
     EStorageClassType type;
 }
 SStorageClass;
+void initSStorageClass(SStorageClass* const strgClass, const UToken* const tok);
 
 typedef enum EDeclSpecifierType
 {
@@ -115,13 +124,14 @@ typedef union UDeclSpecifierCore
 }
 UDeclSpecifierCore;
 
-typedef struct SDeclSpecifier SDeclSpecifier;
-struct SDeclSpecifier {
+typedef struct SDeclSpecifier
+{
     const SParserASTNode node;
     const EDeclSpecifierType type;
-    const SDeclSpecifier* next;
-    UDeclSpecifierCore* core;
-};
+    const UDeclSpecifierCore core;
+}
+SDeclSpecifier;
+void initSDeclSpecifier(SDeclSpecifier* const declSp, const UToken* const tok);
 
 typedef enum EDeclType
 {
@@ -232,6 +242,8 @@ typedef struct SInitDeclarator
     SInitializer* initializer; // optional
 }
 SInitDeclarator;
+
+GEN_VECTOR_OF(SDeclSpecifier)
 
 typedef struct SDecl
 {

@@ -1,23 +1,21 @@
 #ifndef FRONTEND_C_PARSER_H
 #define FRONTEND_C_PARSER_H
 
-#include "scanner.h"
 #include "ast.h"
+#include "diagnostics.h"
+#include "scanner.h"
 #include "token.h"
-#include "error.h"
 
 // =====================================================================
 // ============================== SParser ==============================
 // =====================================================================
 typedef struct STokWind STokWind;
-typedef struct SParser
-{
+typedef struct SParser {
     SScanner* scanner;
     SParserAST* ast;
-    STokWind* tokWind;
     SErrHandler* eh;
-}
-SParser;
+    // TODO: add separate buffers for prev and next tokens
+} SParser;
 
 SParser* new_parser(const String* const filepath);
 void del_parser(SParser* parser);
@@ -36,6 +34,11 @@ void del_parser(SParser* parser);
  * @return the next nth token
  */
 const UToken* parserPeekNextNToken(SParser* const parser, const U64 n);
+
+/*
+ * @return the next token in the token window buffer.
+ */
+const UToken* parserPeekToken(SParser* const parser);
 
 /*
  * Advances the token position in the tokens window buffer after
@@ -106,7 +109,7 @@ void parserBuildAST(SParser* const parser);
  *   and return false.
  *
  * Initializing the tokens window:
- * 
+ *
  *    Scan the next `n` tokens and append them all in the
  *    order they have been scanned to the window buffer. The
  *    remaining slots of the buffer should all be nullified.
@@ -116,8 +119,7 @@ void parserBuildAST(SParser* const parser);
  *     |             | tok | tok | ... | tok | null | null | ... | null |
  *
  */
-struct STokWind
-{
+struct STokWind {
     UToken* toks;
     U64 next; // index of the next token
     U64 len; // fixed length of the tokens buffer
@@ -136,13 +138,13 @@ struct STokWind
  *
  *         `true` otherwise
  */
-bool tokWind_advance(STokWind* const tw, const UToken* const tok);
+Bool tokWind_advance(STokWind* const tw, const UToken* const tok);
 
 /*
  * @return true if the last token in the window buffer is of
  *         type `ETOKEN_EOF` and returns false otherwise.
  */
-inline bool tokWind_isEofReached(const STokWind* const tw)
+inline Bool tokWind_isEofReached(const STokWind* const tw)
 {
     ASSERT(tw, NULL_POINTER_ERROR_MSG_FORMAT, "STokWind");
     return (tw->toks[tw->end].base.type == ETOKEN_EOF);

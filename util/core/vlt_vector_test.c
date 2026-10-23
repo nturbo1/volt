@@ -1,19 +1,19 @@
 #include "vctest.h"
-#include "base_inc.h"
+#include "vlt_assert.h"
 #include "vlt_vector.h"
 
-typedef struct VecTestInput
-{
+#include <stdlib.h>
+
+typedef struct VecTestInput {
     const U64 len;
     const U64 cap;
     const U64 elemSize;
-    const U8* elemBytes;
-}
-VecTestInput;
+    const U8 *elemBytes;
+} VecTestInput;
 
 TEST(whenNewVec_thenNonNullVecWithValidProps,
-     "When create a new Vec obj, then non-NULL obj must be returned and the obj"
-     " must have valid properties/fields")
+    "When create a new Vec obj, then non-NULL obj must be returned and the obj"
+    " must have valid properties/fields")
 {
     VecTestInput inputs[5] = {
         { .len = 0, .cap = 4, .elemSize = 1, .elemBytes = NULL },
@@ -23,15 +23,14 @@ TEST(whenNewVec_thenNonNullVecWithValidProps,
         { .len = 0, .cap = 4, .elemSize = 456, .elemBytes = NULL },
     };
 
-    for (int i = 0; i < 5; i++)
-    {
+    for (int i = 0; i < 5; i++) {
         // GIVEN
         U64 vLen = inputs[i].len;
         U64 vCap = inputs[i].cap;
         U64 vElemSize = inputs[i].elemSize;
 
         // WHEN
-        Vec* v = new_vec(vLen, vCap, vElemSize);
+        Vec *v = new_vec(vLen, vCap, vElemSize);
 
         // THEN
         VCTEST_ASSERT_TRUE(v != NULL);
@@ -47,8 +46,8 @@ TEST(whenNewVec_thenNonNullVecWithValidProps,
 }
 
 TEST(whenVecPush_thenTheElemIsAppendedToVecAndVecIsUpdatedPropertly,
-     "When vec_push an element, then the element must be appended to the Vec"
-     " obj buffer and the Vec obj must properly updated")
+    "When vec_push an element, then the element must be appended to the Vec"
+    " obj buffer and the Vec obj must properly updated")
 {
     VecTestInput inputs[7] = {
         { .len = 0, .cap = 4, .elemSize = 1, .elemBytes = (const U8[]){ 0xaf } },
@@ -96,16 +95,15 @@ TEST(whenVecPush_thenTheElemIsAppendedToVecAndVecIsUpdatedPropertly,
         }
     };
 
-    for (int i = 0; i < 7; i++)
-    {
+    for (int i = 0; i < 7; i++) {
         // GIVEN
         const U64 vLen = inputs[i].len;
         const U64 vCap = inputs[i].cap;
         const U64 vElemSize = inputs[i].elemSize;
-        const U8* vElem = inputs[i].elemBytes;
+        const U8 *vElem = inputs[i].elemBytes;
 
         // WHEN
-        Vec* v = new_vec(vLen, vCap, vElemSize);
+        Vec *v = new_vec(vLen, vCap, vElemSize);
         VCTEST_ASSERT_TRUE(v != NULL);
         vec_push(v, vElemSize, vElem);
 
@@ -124,9 +122,9 @@ TEST(whenVecPush_thenTheElemIsAppendedToVecAndVecIsUpdatedPropertly,
 }
 
 TEST(whenVecPush_thenTheElemIsAppendedToVecAndVecIsExpandedAndVecIsUpdatedPropertly,
-     "When vec_push an element, then the Vec must be expanded to accommodate"
-     " space for a new element, the new element must be appended to the Vec"
-     " obj buffer, and the Vec obj must properly updated")
+    "When vec_push an element, then the Vec must be expanded to accommodate"
+    " space for a new element, the new element must be appended to the Vec"
+    " obj buffer, and the Vec obj must properly updated")
 {
     int testInputsSize = 6;
     VecTestInput inputs[6] = {
@@ -174,17 +172,16 @@ TEST(whenVecPush_thenTheElemIsAppendedToVecAndVecIsExpandedAndVecIsUpdatedProper
         }
     };
 
-    for (int i = 0; i < testInputsSize; i++)
-    {
+    for (int i = 0; i < testInputsSize; i++) {
         // GIVEN
         const U64 vLen = inputs[i].len;
         const U64 vCap = inputs[i].cap;
         ASSERT(vLen == vCap, "Vec length and capacity MUST be the same for this test!");
         const U64 vElemSize = inputs[i].elemSize;
-        const U8* vElem = inputs[i].elemBytes;
+        const U8 *vElem = inputs[i].elemBytes;
 
         // WHEN
-        Vec* v = new_vec(vLen, vCap, vElemSize);
+        Vec *v = new_vec(vLen, vCap, vElemSize);
         VCTEST_ASSERT_TRUE(v != NULL);
         vec_push(v, vElemSize, vElem);
         fflush(stdout);
@@ -205,8 +202,8 @@ TEST(whenVecPush_thenTheElemIsAppendedToVecAndVecIsExpandedAndVecIsUpdatedProper
 }
 
 TEST(whenVecInsert_thenTheElemIsInsertedToVecAtIndex,
-     "When vec_insert an element, then the element must be inserted at the"
-     "specified index and the Vec obj buffer updated")
+    "When vec_insert an element, then the element must be inserted at the"
+    "specified index and the Vec obj buffer updated")
 {
     VecTestInput inputs[7] = {
         { .len = 1, .cap = 4, .elemSize = 1, .elemBytes = (const U8[]){ 0xaf } },
@@ -254,12 +251,10 @@ TEST(whenVecInsert_thenTheElemIsInsertedToVecAtIndex,
         }
     };
 
-    for (int i = 0; i < 7; i++)
-    {
+    for (int i = 0; i < 7; i++) {
         U64 inputIndices[3] = { 0, inputs[i].len / 2, inputs[i].len - 1 };
         int inputIndicesSize = 1;
-        if (inputIndices[1] > 0)
-        {
+        if (inputIndices[1] > 0) {
             if (inputIndices[2] > 0)
                 inputIndicesSize = 3;
             else
@@ -270,12 +265,11 @@ TEST(whenVecInsert_thenTheElemIsInsertedToVecAtIndex,
         const U64 vLen = inputs[i].len;
         const U64 vCap = inputs[i].cap;
         const U64 vElemSize = inputs[i].elemSize;
-        const U8* vElem = inputs[i].elemBytes;
-        Vec* v = new_vec(vLen, vCap, vElemSize);
+        const U8 *vElem = inputs[i].elemBytes;
+        Vec *v = new_vec(vLen, vCap, vElemSize);
         VCTEST_ASSERT_TRUE(v != NULL);
 
-        for (int k = 0; k < inputIndicesSize; k++)
-        {
+        for (int k = 0; k < inputIndicesSize; k++) {
             // GIVEN
             const U64 vIdx = inputIndices[k];
 
@@ -298,9 +292,9 @@ TEST(whenVecInsert_thenTheElemIsInsertedToVecAtIndex,
 }
 
 TEST(whenVecPop_thenTheLastElemIsRemovedAndPointerToTheLastElemIsReturnedAndVecIsUpdatedPropertly,
-     "When vec_pop, then the last element in the Vec is removed,"
-     " a pointer to the removed element is returned, and the Vec"
-     " obj is properly updated")
+    "When vec_pop, then the last element in the Vec is removed,"
+    " a pointer to the removed element is returned, and the Vec"
+    " obj is properly updated")
 {
     VecTestInput inputs[7] = {
         { .len = 1, .cap = 4, .elemSize = 1, .elemBytes = (const U8[]){ 0xaf } },
@@ -348,19 +342,18 @@ TEST(whenVecPop_thenTheLastElemIsRemovedAndPointerToTheLastElemIsReturnedAndVecI
         }
     };
 
-    for (int i = 0; i < 7; i++)
-    {
+    for (int i = 0; i < 7; i++) {
         // GIVEN
         const U64 vLen = inputs[i].len;
         const U64 vCap = inputs[i].cap;
         const U64 vElemSize = inputs[i].elemSize;
-        const U8* vElem = inputs[i].elemBytes;
-        Vec* v = new_vec(vLen, vCap, vElemSize);
+        const U8 *vElem = inputs[i].elemBytes;
+        Vec *v = new_vec(vLen, vCap, vElemSize);
         VCTEST_ASSERT_TRUE(v != NULL);
         vec_push(v, vElemSize, vElem); // now v->len == vLen + 1
 
         // WHEN
-        const U8* poppedElem = vec_pop(v); // now should be v->len == vLen
+        const U8 *poppedElem = vec_pop(v); // now should be v->len == vLen
 
         // THEN
         VCTEST_ASSERT_TRUE(v->cap == vCap);
@@ -372,7 +365,7 @@ TEST(whenVecPop_thenTheLastElemIsRemovedAndPointerToTheLastElemIsReturnedAndVecI
             VCTEST_ASSERT_TRUE(poppedElem[j] == vElem[j]);
 
         // CLEAN-UP
-        free((U8*) poppedElem);
+        free((U8 *)poppedElem);
         poppedElem = NULL;
         del_vec(v);
         v = NULL;
@@ -380,7 +373,7 @@ TEST(whenVecPop_thenTheLastElemIsRemovedAndPointerToTheLastElemIsReturnedAndVecI
 }
 
 TEST(whenVecGet_thenPointerToElemAtIdxIsReturned,
-     "When vec_get, then a pointer to an element at a given index is returned")
+    "When vec_get, then a pointer to an element at a given index is returned")
 {
     VecTestInput inputs[7] = {
         { .len = 1, .cap = 4, .elemSize = 1, .elemBytes = (const U8[]){ 0xaf } },
@@ -428,12 +421,10 @@ TEST(whenVecGet_thenPointerToElemAtIdxIsReturned,
         }
     };
 
-    for (int i = 0; i < 7; i++)
-    {
+    for (int i = 0; i < 7; i++) {
         U64 inputIndices[3] = { 0, inputs[i].len / 2, inputs[i].len - 1 };
         int inputIndicesSize = 1;
-        if (inputIndices[1] > 0)
-        {
+        if (inputIndices[1] > 0) {
             if (inputIndices[2] > 0)
                 inputIndicesSize = 3;
             else
@@ -444,18 +435,17 @@ TEST(whenVecGet_thenPointerToElemAtIdxIsReturned,
         const U64 vLen = inputs[i].len;
         const U64 vCap = inputs[i].cap;
         const U64 vElemSize = inputs[i].elemSize;
-        const U8* vElem = inputs[i].elemBytes;
-        Vec* v = new_vec(vLen, vCap, vElemSize);
+        const U8 *vElem = inputs[i].elemBytes;
+        Vec *v = new_vec(vLen, vCap, vElemSize);
         VCTEST_ASSERT_TRUE(v != NULL);
 
-        for (int k = 0; k < inputIndicesSize; k++)
-        {
+        for (int k = 0; k < inputIndicesSize; k++) {
             // GIVEN
             const U64 vIdx = inputIndices[k];
             vec_insert(v, vIdx, vElem, vElemSize);
 
             // WHEN
-            const U8* elemAtIdx = vec_get(v, vIdx);
+            const U8 *elemAtIdx = vec_get(v, vIdx);
 
             // THEN
             VCTEST_ASSERT_TRUE(elemAtIdx != NULL);
