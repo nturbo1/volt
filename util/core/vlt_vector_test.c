@@ -12,8 +12,8 @@ typedef struct VecTestInput {
 } VecTestInput;
 
 TEST(whenNewVec_thenNonNullVecWithValidProps,
-    "When create a new Vec obj, then non-NULL obj must be returned and the obj"
-    " must have valid properties/fields")
+     "When create a new Vec obj, then non-NULL obj must be returned and the obj"
+     " must have valid properties/fields")
 {
     VecTestInput inputs[5] = {
         { .len = 0, .cap = 4, .elemSize = 1, .elemBytes = NULL },
@@ -30,7 +30,7 @@ TEST(whenNewVec_thenNonNullVecWithValidProps,
         U64 vElemSize = inputs[i].elemSize;
 
         // WHEN
-        Vec *v = new_vec(vLen, vCap, vElemSize);
+        Vec *v = new_vec(vLen, vCap, vElemSize, NULL, NULL, NULL);
 
         // THEN
         VCTEST_ASSERT_TRUE(v != NULL);
@@ -46,8 +46,8 @@ TEST(whenNewVec_thenNonNullVecWithValidProps,
 }
 
 TEST(whenVecPush_thenTheElemIsAppendedToVecAndVecIsUpdatedPropertly,
-    "When vec_push an element, then the element must be appended to the Vec"
-    " obj buffer and the Vec obj must properly updated")
+     "When vec_push an element, then the element must be appended to the Vec"
+     " obj buffer and the Vec obj must properly updated")
 {
     VecTestInput inputs[7] = {
         { .len = 0, .cap = 4, .elemSize = 1, .elemBytes = (const U8[]){ 0xaf } },
@@ -103,7 +103,7 @@ TEST(whenVecPush_thenTheElemIsAppendedToVecAndVecIsUpdatedPropertly,
         const U8 *vElem = inputs[i].elemBytes;
 
         // WHEN
-        Vec *v = new_vec(vLen, vCap, vElemSize);
+        Vec *v = new_vec(vLen, vCap, vElemSize, NULL, NULL, NULL);
         VCTEST_ASSERT_TRUE(v != NULL);
         vec_push(v, vElemSize, vElem);
 
@@ -122,9 +122,9 @@ TEST(whenVecPush_thenTheElemIsAppendedToVecAndVecIsUpdatedPropertly,
 }
 
 TEST(whenVecPush_thenTheElemIsAppendedToVecAndVecIsExpandedAndVecIsUpdatedPropertly,
-    "When vec_push an element, then the Vec must be expanded to accommodate"
-    " space for a new element, the new element must be appended to the Vec"
-    " obj buffer, and the Vec obj must properly updated")
+     "When vec_push an element, then the Vec must be expanded to accommodate"
+     " space for a new element, the new element must be appended to the Vec"
+     " obj buffer, and the Vec obj must properly updated")
 {
     int testInputsSize = 6;
     VecTestInput inputs[6] = {
@@ -181,7 +181,7 @@ TEST(whenVecPush_thenTheElemIsAppendedToVecAndVecIsExpandedAndVecIsUpdatedProper
         const U8 *vElem = inputs[i].elemBytes;
 
         // WHEN
-        Vec *v = new_vec(vLen, vCap, vElemSize);
+        Vec *v = new_vec(vLen, vCap, vElemSize, NULL, NULL, NULL);
         VCTEST_ASSERT_TRUE(v != NULL);
         vec_push(v, vElemSize, vElem);
         fflush(stdout);
@@ -202,8 +202,8 @@ TEST(whenVecPush_thenTheElemIsAppendedToVecAndVecIsExpandedAndVecIsUpdatedProper
 }
 
 TEST(whenVecInsert_thenTheElemIsInsertedToVecAtIndex,
-    "When vec_insert an element, then the element must be inserted at the"
-    "specified index and the Vec obj buffer updated")
+     "When vec_insert an element, then the element must be inserted at the"
+     "specified index and the Vec obj buffer updated")
 {
     VecTestInput inputs[7] = {
         { .len = 1, .cap = 4, .elemSize = 1, .elemBytes = (const U8[]){ 0xaf } },
@@ -266,7 +266,7 @@ TEST(whenVecInsert_thenTheElemIsInsertedToVecAtIndex,
         const U64 vCap = inputs[i].cap;
         const U64 vElemSize = inputs[i].elemSize;
         const U8 *vElem = inputs[i].elemBytes;
-        Vec *v = new_vec(vLen, vCap, vElemSize);
+        Vec *v = new_vec(vLen, vCap, vElemSize, NULL, NULL, NULL);
         VCTEST_ASSERT_TRUE(v != NULL);
 
         for (int k = 0; k < inputIndicesSize; k++) {
@@ -292,9 +292,9 @@ TEST(whenVecInsert_thenTheElemIsInsertedToVecAtIndex,
 }
 
 TEST(whenVecPop_thenTheLastElemIsRemovedAndPointerToTheLastElemIsReturnedAndVecIsUpdatedPropertly,
-    "When vec_pop, then the last element in the Vec is removed,"
-    " a pointer to the removed element is returned, and the Vec"
-    " obj is properly updated")
+     "When vec_pop, then the last element in the Vec is removed,"
+     " a pointer to the removed element is returned, and the Vec"
+     " obj is properly updated")
 {
     VecTestInput inputs[7] = {
         { .len = 1, .cap = 4, .elemSize = 1, .elemBytes = (const U8[]){ 0xaf } },
@@ -348,7 +348,7 @@ TEST(whenVecPop_thenTheLastElemIsRemovedAndPointerToTheLastElemIsReturnedAndVecI
         const U64 vCap = inputs[i].cap;
         const U64 vElemSize = inputs[i].elemSize;
         const U8 *vElem = inputs[i].elemBytes;
-        Vec *v = new_vec(vLen, vCap, vElemSize);
+        Vec *v = new_vec(vLen, vCap, vElemSize, NULL, NULL, NULL);
         VCTEST_ASSERT_TRUE(v != NULL);
         vec_push(v, vElemSize, vElem); // now v->len == vLen + 1
 
@@ -373,7 +373,7 @@ TEST(whenVecPop_thenTheLastElemIsRemovedAndPointerToTheLastElemIsReturnedAndVecI
 }
 
 TEST(whenVecGet_thenPointerToElemAtIdxIsReturned,
-    "When vec_get, then a pointer to an element at a given index is returned")
+     "When vec_get, then a pointer to an element at a given index is returned")
 {
     VecTestInput inputs[7] = {
         { .len = 1, .cap = 4, .elemSize = 1, .elemBytes = (const U8[]){ 0xaf } },
@@ -436,7 +436,7 @@ TEST(whenVecGet_thenPointerToElemAtIdxIsReturned,
         const U64 vCap = inputs[i].cap;
         const U64 vElemSize = inputs[i].elemSize;
         const U8 *vElem = inputs[i].elemBytes;
-        Vec *v = new_vec(vLen, vCap, vElemSize);
+        Vec *v = new_vec(vLen, vCap, vElemSize, NULL, NULL, NULL);
         VCTEST_ASSERT_TRUE(v != NULL);
 
         for (int k = 0; k < inputIndicesSize; k++) {

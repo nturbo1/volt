@@ -1,16 +1,27 @@
 #ifndef BASE_VLT_VECTOR_H
 #define BASE_VLT_VECTOR_H
 
-#include "base.h"
+#include "config.h"
+#include "vlt_container_base.h"
+#include "vlt_memory.h"
 
-typedef struct {
+struct SVec {
     U64 len;
     U64 cap;
     const U64 elemSize;
     U8 *buf;
-} Vec;
+    FMemAlloc *const fAllocMem;
+    FMemDealloc *const fDeallocMem;
+    FComparator *const fCompare;
+};
+typedef struct SVec Vec;
 
-Vec *new_vec(const U64 len, const U64 cap, const U64 elemSize);
+Vec *new_vec(const U64 len,
+             const U64 cap,
+             const U64 elemSize,
+             FMemAlloc *const fAllocMem,
+             FMemDealloc *const fDeallocMem,
+             FComparator *const fCompare);
 
 // Deletes a given Vecor object resources.
 // It's the programmer's responsibility to set the deleted Vecor

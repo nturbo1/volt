@@ -56,6 +56,7 @@ HashMap *new_hashmap(FMemAlloc *const fAllocMem,
     FMemAlloc *const fAllocM = fAllocMem ? fAllocMem : malloc;
     FMemDealloc *const fDeallocM = fDeallocMem ? fDeallocMem : free;
     FHash *const hashFunc = fHash ? fHash : hash;
+    FComparator *const fCompareK = fCompareKeys ? fCompareKeys : bytesEqual;
 
     HashMap *hm = (HashMap *)fAllocM(sizeof(HashMap));
     ASSERT(hm != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "a HashMap obj");
@@ -70,7 +71,7 @@ HashMap *new_hashmap(FMemAlloc *const fAllocMem,
     hm->size = 0;
     *(FMemAlloc **)&(hm->fAllocMem) = fAllocM;
     *(FMemDealloc **)&(hm->fDeallocMem) = fDeallocM;
-    *(FComparator **)&(hm->fCompareKeys) = fCompareKeys;
+    *(FComparator **)&(hm->fCompareKeys) = fCompareK;
     *(FHash **)&(hm->fHash) = hashFunc;
 
     return hm;
@@ -127,9 +128,7 @@ MapElem *hashmap_get(const HashMap *const hm, const U8 *const key, const U64 key
 
     MapElemNode *curr = bucketEntry->head;
     while (curr) {
-        if (curr->elem.keySize == keySize
-            && (hm->fCompareKeys ? hm->fCompareKeys(curr->elem.key, key)
-                                 : bytesEqual(curr->elem.key, key, keySize)))
+        if (curr->elem.keySize == keySize && hm->fCompareKeys(curr->elem.key, key, keySize))
             return (MapElem *)curr;
         curr = curr->next;
     }
@@ -149,9 +148,7 @@ void hashmap_del(HashMap *const hm, const U8 *const key, const U64 keySize)
     MapElemNode *prev = NULL;
     MapElemNode *curr = bucketEntry->head;
     while (curr) {
-        if (curr->elem.keySize == keySize
-            && (hm->fCompareKeys ? hm->fCompareKeys(curr->elem.key, key)
-                                 : bytesEqual(curr->elem.key, key, keySize))) {
+        if (curr->elem.keySize == keySize && hm->fCompareKeys(curr->elem.key, key, keySize)) {
             if (prev != NULL)
                 prev->next = curr->next;
             else
@@ -223,9 +220,7 @@ static void putKV(HashMap *const hm, // for accessing unchanged/common funcs and
     MapElemNode *prev = NULL;
     MapElemNode *curr = bucketEntry->head;
     while (curr) {
-        if (curr->elem.keySize == keySize
-            && (hm->fCompareKeys ? hm->fCompareKeys(curr->elem.key, key)
-                                 : bytesEqual(curr->elem.key, key, keySize))) {
+        if (curr->elem.keySize == keySize && hm->fCompareKeys(curr->elem.key, key, keySize)) {
             hm->fDeallocMem(curr->elem.val);
             curr->elem.val = copyBytesToNew(val, valSize);
             curr->elem.valSize = valSize;

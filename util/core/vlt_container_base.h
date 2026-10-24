@@ -3,7 +3,7 @@
 
 #include "config.h"
 
-typedef Bool FComparator(const void *const k1, const void *const k2);
+typedef Bool FComparator(const U8 *const k1, const U8 *const k2, const U64 size);
 
 // A Hash function type
 typedef U64 FHash(const U8 *const key, const U64 keySize);
