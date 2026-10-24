@@ -1,7 +1,7 @@
 add_library(volt_core_util
     vlt_string.c
     vlt_vector.c
-    vlt_hashmap.c
+    vlt_hashmap_sep_chaining.c
     vlt_stringBuilder.c
     vlt_hash.c
     vlt_bytes.c

@@ -8,44 +8,44 @@
 #include <stdlib.h>
 #include <string.h>
 
-// HMap<String*, EToken>
+// HashMap<String*, EToken>
 static void initKeywordsMap();
-static HMap *keywords = NULL;
+static HashMap *keywords = NULL;
 
 ///////////////////////////////////////////////////////////////////////////////////
-// HMap<String, EToken>
+// HashMap<String, EToken>
 ///////////////////////////////////////////////////////////////////////////////////
 GEN_HMAP_OF(String, EToken)
 
-static void hmapStringEToken_put(HMap *const hm, const String *const key, const EToken val)
+static void hmapStringEToken_put(HashMap *const hm, const String *const key, const EToken val)
 {
     ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
     ASSERT(key->len > 0, "Empty string can't be a hashmap key.");
-    hmap_put(hm, key->bytes, key->len + 1, (U8 *)&val, sizeof(EToken));
+    hashmap_put(hm, key->bytes, key->len + 1, (U8 *)&val, sizeof(EToken));
 }
 
-static EToken hmapStringEToken_get(HMap *const hm, const String *const key)
+static EToken hmapStringEToken_get(HashMap *const hm, const String *const key)
 {
     ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
     ASSERT(key->len > 0, "Empty string can't be a hashmap key.");
-    MapElem *elem = hmap_get(hm, key->bytes, key->len + 1);
+    MapElem *elem = hashmap_get(hm, key->bytes, key->len + 1);
     if (elem != NULL) {
         ASSERT_DBG(
-            elem->valSize == sizeof(EToken), "HMap element value size doesn't match EToken size.");
+            elem->valSize == sizeof(EToken), "HashMap element value size doesn't match EToken size.");
         return *(EToken *)(elem->val);
     }
 
     return eTokenEnd;
 }
 
-static void printHMapStringKey(FILE *const out, const U8 *const key)
+static void printHashMapStringKey(FILE *const out, const U8 *const key)
 {
     ASSERT(out != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "FILE");
     ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "U8");
     fprintf(out, "\"%s\"", key);
 }
 
-static void printHMapETokenVal(FILE *const out, const U8 *const val)
+static void printHashMapETokenVal(FILE *const out, const U8 *const val)
 {
     ASSERT(out != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "FILE");
     ASSERT(val != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "U8");
@@ -582,7 +582,7 @@ void del_scanner(SScanner *s)
     if (s) {
         delScanSrc(s->src);
         del_string(s->filepath);
-        del_hmap(keywords);
+        del_hashmap(keywords);
         keywords = NULL;
         free(s);
     }
@@ -772,7 +772,7 @@ static void skipWhitespace(SScanner *s)
 static void initKeywordsMap()
 {
     if (keywords == NULL)
-        keywords = new_hmap();
+        keywords = new_hashmap();
 
     const U64 kwsCount = eTokenKeywordEnd - eTokenKeywordBeg - 1;
     const String kws[eTokenKeywordEnd - eTokenKeywordBeg - 1] = {
@@ -930,14 +930,14 @@ static void fillScanSrcBuf(SScanSrc *src)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
-// HMap<String, EToken>
+// HashMap<String, EToken>
 ///////////////////////////////////////////////////////////////////////////////////
-void printHMapStringEToken(const HMap *const hm)
+void printHashMapStringEToken(const HashMap *const hm)
 {
-    hmap_print(hm, stdout, printHMapStringKey, printHMapETokenVal);
+    hashmap_print(hm, stdout, printHashMapStringKey, printHashMapETokenVal);
 }
 
-void printKeywordsHMap()
+void printKeywordsHashMap()
 {
-    printHMapStringEToken(keywords);
+    printHashMapStringEToken(keywords);
 }

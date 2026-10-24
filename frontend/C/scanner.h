@@ -37,9 +37,9 @@ struct ScanSrc {
 };
 
 ///////////////////////////////////////////////////////////////////////////////////
-// HMap<String, EToken>
+// HashMap<String, EToken>
 ///////////////////////////////////////////////////////////////////////////////////
-void printHMapStringEToken(const HMap *const hm);
-void printKeywordsHMap(); // for debugging purposes
+void printHashMapStringEToken(const HashMap *const hm);
+void printKeywordsHashMap(); // for debugging purposes
 
 #endif // FRONTEND_C_SCANNER_H
