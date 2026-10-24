@@ -7,12 +7,12 @@
 
 TEST(whenNewStringBuilder_thenReturnPointerToNewStringBuilderObjWithCorrectProperties,
      "When new_stringBuilder, then a non-NULL pointer to a new"
-     " SStringBuilder object with correctly initialized"
+     " StringBuilder object with correctly initialized"
      " fields/properties must be returned")
 {
     // GIVEN
     // WHEN
-    SStringBuilder *sb = new_stringBuilder();
+    StringBuilder *sb = new_stringBuilder(NULL, NULL);
     // THEN
     VCTEST_ASSERT_TRUE(sb != NULL);
     VCTEST_ASSERT_TRUE(sb->buf != NULL);
@@ -24,11 +24,11 @@ TEST(whenNewStringBuilder_thenReturnPointerToNewStringBuilderObjWithCorrectPrope
 
 TEST(whenAppendChar_thenAppendCharToGivenStringBuilderAndUpdateProperly,
      "When sb_appendChar, then append a given char to a given"
-     " SStringBuilder obj buffer and update the SStringBuilder"
+     " StringBuilder obj buffer and update the StringBuilder"
      " object properly")
 {
     // GIVEN
-    SStringBuilder *sb = new_stringBuilder();
+    StringBuilder *sb = new_stringBuilder(NULL, NULL);
     VCTEST_ASSERT_TRUE(sb != NULL);
     VCTEST_ASSERT_TRUE(sb->buf != NULL);
     U64 inputsSize = 30;
@@ -52,7 +52,7 @@ TEST(whenAppendChar_thenAppendCharToGivenStringBuilderAndUpdateProperly,
 
 TEST(whenAppendString_thenAppendStringToGivenStringBuilderAndUpdateProperly,
      "When sb_appendString, then append a given String bytes to a given"
-     " SStringBuilder obj buffer and update the SStringBuilder object properly")
+     " StringBuilder obj buffer and update the StringBuilder object properly")
 {
     U64 inputsSize = 5;
     String *inputs[] = {
@@ -65,7 +65,7 @@ TEST(whenAppendString_thenAppendStringToGivenStringBuilderAndUpdateProperly,
 
     for (U64 i = 0; i < inputsSize; i++) {
         // GIVEN
-        SStringBuilder *sb = new_stringBuilder();
+        StringBuilder *sb = new_stringBuilder(NULL, NULL);
         VCTEST_ASSERT_TRUE(sb != NULL);
         VCTEST_ASSERT_TRUE(sb->buf != NULL);
         String *str = inputs[i];
@@ -88,7 +88,7 @@ TEST(whenAppendString_thenAppendStringToGivenStringBuilderAndUpdateProperly,
 
 TEST(whenAppendStrLit_thenAppendStrLitToGivenStringBuilderAndUpdateProperly,
      "When sb_appendStrLit, then append a given string literal bytes to a"
-     " given SStringBuilder obj buffer and update the SStringBuilder object"
+     " given StringBuilder obj buffer and update the StringBuilder object"
      " properly")
 {
     U64 inputsSize = 5;
@@ -98,7 +98,7 @@ TEST(whenAppendStrLit_thenAppendStrLitToGivenStringBuilderAndUpdateProperly,
 
     for (U64 i = 0; i < inputsSize; i++) {
         // GIVEN
-        SStringBuilder *sb = new_stringBuilder();
+        StringBuilder *sb = new_stringBuilder(NULL, NULL);
         VCTEST_ASSERT_TRUE(sb != NULL);
         VCTEST_ASSERT_TRUE(sb->buf != NULL);
         const char *const strLit = inputs[i];
@@ -131,7 +131,7 @@ TEST(whenToString_thenReturnCorrectString,
 
     for (U64 i = 0; i < inputsSize; i++) {
         // GIVEN
-        SStringBuilder *sb = new_stringBuilder();
+        StringBuilder *sb = new_stringBuilder(NULL, NULL);
         VCTEST_ASSERT_TRUE(sb != NULL);
         VCTEST_ASSERT_TRUE(sb->buf != NULL);
         String *str = inputs[i];

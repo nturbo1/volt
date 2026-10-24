@@ -604,7 +604,7 @@ static EToken scanIdentifier(SScanner *s)
         return ETOKEN_INVALID;
     }
 
-    SStringBuilder *identSb = new_stringBuilder();
+    StringBuilder *identSb = new_stringBuilder();
     while (isAlnum(ch) || ch == '_') {
         sb_appendChar(identSb, nextChar(s));
         ch = peekChar(s);
@@ -679,7 +679,7 @@ static EToken scanDecimal(SScanner *s)
 
     const U64 tokCol = s->colOffs + 1;
     const U64 tokLn = s->lnOffs + 1;
-    SStringBuilder *digitsSb = new_stringBuilder();
+    StringBuilder *digitsSb = new_stringBuilder();
     while (isDecDigit(peekChar(s)))
         sb_appendChar(digitsSb, nextChar(s));
     String *digitsStr = sb_toString(digitsSb);

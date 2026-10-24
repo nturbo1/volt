@@ -6,14 +6,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-String *new_string(const U8 *const bytes, const U64 len)
+String *new_string(const U8 *const bytes,
+                   const U64 len,
+                   FMemAlloc *const fAllocMem,
+                   FMemDealloc *const fDeallocMem)
 {
-    String *newStr = (String *)malloc(sizeof(String));
+    FMemAlloc *const fAllocM = fAllocMem ? fAllocMem : malloc;
+    FMemDealloc *const fDeallocM = fDeallocMem ? fDeallocMem : free;
+
+    String *newStr = (String *)fAllocM(sizeof(String));
     ASSERT(newStr != NULL, "Failed to allocate memory for a String object.");
 
     // doesn't count the NULL-terminator
     const U64 newStrLen = (len > 0 && bytes[len - 1] == 0) ? len - 1 : len;
-    const U8 *newStrBytes = (const U8 *)malloc(newStrLen + 1);
+    const U8 *newStrBytes = (const U8 *)fAllocM(newStrLen + 1);
     ASSERT(newStrBytes != NULL, "Failed to allocate memory for a String object character bytes.");
     ASSERT_DBG(len == 0 || newStrLen <= len,
                "New String length can't be bigger than a given string bytes length.");
@@ -24,13 +30,15 @@ String *new_string(const U8 *const bytes, const U64 len)
     newStr->bytes = newStrBytes;
     newStrBytes = NULL;
     newStr->len = newStrLen;
+    *(FMemAlloc **)&(newStr->fAllocMem) = fAllocM;
+    *(FMemDealloc **)&(newStr->fDeallocMem) = fDeallocM;
 
     return newStr;
 }
 
 String *new_stringFromLit(const char *bytes)
 {
-    return new_string((const U8 *const)bytes, strlen(bytes));
+    return new_string((const U8 *const)bytes, strlen(bytes), NULL, NULL);
 }
 
 String *stringCopy(const String *const source, const U64 startIdx, const U64 endIdx)
@@ -44,7 +52,7 @@ String *stringCopy(const String *const source, const U64 startIdx, const U64 end
     if (source == NULL)
         return NULL;
 
-    return new_string(source->bytes + startIdx, endIdx - startIdx);
+    return new_string(source->bytes + startIdx, endIdx - startIdx, NULL, NULL);
 }
 
 void del_string(String *str)
@@ -52,10 +60,11 @@ void del_string(String *str)
     if (str == NULL)
         return;
 
-    free((U8 *)str->bytes);
+    FMemDealloc *const fDeallocMem = str->fDeallocMem;
+    fDeallocMem((U8 *)str->bytes);
     str->bytes = NULL;
     str->len = 0;
-    free(str);
+    fDeallocMem(str);
 }
 
 Bool stringEqual(String *s1, String *s2)

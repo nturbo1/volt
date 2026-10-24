@@ -1,7 +1,8 @@
 #ifndef VLT_STRING_H
 #define VLT_STRING_H
 
-#include "base.h"
+#include "config.h"
+#include "vlt_memory.h"
 
 #include <stdbool.h>
 
@@ -9,6 +10,8 @@
 typedef struct {
     const U8 *bytes; // NULL-terminated
     U64 len; // doesn't count the NULL-terminator
+    FMemAlloc *const fAllocMem;
+    FMemDealloc *const fDeallocMem;
 } String;
 
 // Creates a new String object and returns a pointer to it.
@@ -17,7 +20,10 @@ typedef struct {
 // NULL-terminator to the bytes of a newly created `String` obj.
 // However `len` of a newly created `String` obj doesn't count
 // the NULL-terminator.
-String *new_string(const U8 *const bytes, const U64 len);
+String *new_string(const U8 *const bytes,
+                   const U64 len,
+                   FMemAlloc *const fAllocMem,
+                   FMemDealloc *const fDeallocMem);
 
 // Creates a new String object from a string literal.
 String *new_stringFromLit(const char *bytes);

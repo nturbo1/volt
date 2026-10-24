@@ -21,7 +21,7 @@ TEST(testNewScanner,
      " first/next token")
 {
     // GIVEN
-    SStringBuilder *sb = new_stringBuilder();
+    StringBuilder *sb = new_stringBuilder();
     VCTEST_ASSERT_TRUE(sb != NULL);
     String *testFilepath = new_stringFromLit(__FILE__);
     VCTEST_ASSERT_TRUE(testFilepath != NULL);
@@ -81,7 +81,7 @@ TEST(testScanPunctuators,
                           ETOKEN_EOF };
 
     // GIVEN
-    SStringBuilder *sb = new_stringBuilder();
+    StringBuilder *sb = new_stringBuilder();
     VCTEST_ASSERT_TRUE(sb != NULL);
     String *testFilepath = new_stringFromLit(__FILE__);
     VCTEST_ASSERT_TRUE(testFilepath != NULL);
@@ -141,7 +141,7 @@ TEST(testScanKeywords,
             ETOKEN_FLOAT,    ETOKEN_DOUBLE,   ETOKEN_EOF };
 
     // GIVEN
-    SStringBuilder *sb = new_stringBuilder();
+    StringBuilder *sb = new_stringBuilder();
     VCTEST_ASSERT_TRUE(sb != NULL);
     String *testFilepath = new_stringFromLit(__FILE__);
     VCTEST_ASSERT_TRUE(testFilepath != NULL);
@@ -193,7 +193,7 @@ TEST(testScanComments,
      " correct comments text")
 {
     // GIVEN
-    SStringBuilder *sb = new_stringBuilder();
+    StringBuilder *sb = new_stringBuilder();
     VCTEST_ASSERT_TRUE(sb != NULL);
     String *testFilepath = new_stringFromLit(__FILE__);
     VCTEST_ASSERT_TRUE(testFilepath != NULL);
@@ -294,7 +294,7 @@ TEST(testScanOperators,
             ETOKEN_EOF };
 
     // GIVEN
-    SStringBuilder *sb = new_stringBuilder();
+    StringBuilder *sb = new_stringBuilder();
     VCTEST_ASSERT_TRUE(sb != NULL);
     String *testFilepath = new_stringFromLit(__FILE__);
     VCTEST_ASSERT_TRUE(testFilepath != NULL);
@@ -373,7 +373,7 @@ TEST(testScanDecimalLiterals,
                                 1844674407370955 };
 
     // GIVEN
-    SStringBuilder *sb = new_stringBuilder();
+    StringBuilder *sb = new_stringBuilder();
     VCTEST_ASSERT_TRUE(sb != NULL);
     String *testFilepath = new_stringFromLit(__FILE__);
     VCTEST_ASSERT_TRUE(testFilepath != NULL);

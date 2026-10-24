@@ -75,7 +75,7 @@ TEST(whenNewString_thenNonNullPointerToStringMustBeReturned,
         const U64 len = inputsNullTerminated[i].strBytesLen;
 
         // WHEN
-        String *s = new_string(bytes, len);
+        String *s = new_string(bytes, len, NULL, NULL);
 
         // THEN
         VCTEST_ASSERT_TRUE(s != NULL);
@@ -100,7 +100,7 @@ TEST(whenNewString_thenNonNullPointerToStringMustBeReturned,
                                                                  // length
 
         // WHEN
-        String *s = new_string(bytes, len);
+        String *s = new_string(bytes, len, NULL, NULL);
 
         // THEN
         VCTEST_ASSERT_TRUE(s != NULL);
