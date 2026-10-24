@@ -8,6 +8,9 @@
 #define VEC_DEFAULT_CAPACITY_SIZE 16
 #define NULL_VEC_POINTER_ERROR_MSG "NULL Vector pointer was passed"
 #define VEC_INDEX_OUT_OF_BOUNDS_ERROR_MSG "Vector index out of bounds."
+#define VEC_MEM_ALLOC_HAS_NOT_BEEN_INITIALIZED_MSG "Vec memory allocator has not been initialized!"
+#define VEC_MEM_DEALLOC_HAS_NOT_BEEN_INITIALIZED_MSG                                               \
+    "Vec memory deallocator has not been initialized!"
 
 static void vec_expand(Vec *vt);
 
@@ -27,11 +30,11 @@ Vec *new_vec(const U64 len,
     FMemDealloc *const fDeallocM = fDeallocMem ? fDeallocMem : free;
     FComparator *const fCompareElems = fCompare ? fCompare : bytesEqual;
 
-    Vec *vt = (Vec *)malloc(sizeof(Vec));
+    Vec *vt = (Vec *)fAllocM(sizeof(Vec));
     ASSERT(vt != NULL, "Failed to allocate memory for a Vec object.");
     U8 *buf = NULL;
     if (cap > 0) {
-        buf = (U8 *)malloc(elemSize * cap);
+        buf = (U8 *)fAllocM(elemSize * cap);
         ASSERT(buf != NULL, "Failed to allocate memory for a Vec buffer.");
     }
 
@@ -51,8 +54,10 @@ void del_vec(Vec *vt)
     if (vt == NULL)
         return;
 
-    free(vt->buf);
-    free(vt);
+    ASSERT(vt->fDeallocMem, VEC_MEM_DEALLOC_HAS_NOT_BEEN_INITIALIZED_MSG);
+    FMemDealloc *const fDeallocMem = vt->fDeallocMem;
+    fDeallocMem(vt->buf);
+    fDeallocMem(vt);
 }
 
 void vec_insert(Vec *const vt, const U64 idx, const U8 *const elemBytes, const U64 elemSize)
@@ -86,7 +91,8 @@ U8 *vec_pop(Vec *const vt)
     if (vt->len == 0)
         return NULL;
 
-    U8 *lastElemBytesCopy = (U8 *)malloc(vt->elemSize);
+    ASSERT(vt->fAllocMem, VEC_MEM_ALLOC_HAS_NOT_BEEN_INITIALIZED_MSG);
+    U8 *lastElemBytesCopy = (U8 *)vt->fAllocMem(vt->elemSize);
     ASSERT(lastElemBytesCopy != NULL, "Failed to allocate memory for a vector element.");
     U8 *lastElemBytes = vt->buf + (vt->elemSize * (vt->len - 1));
     for (U64 i = 0; i < vt->elemSize; i++)
@@ -110,20 +116,24 @@ static void vec_expand(Vec *vt)
     if (vt->buf == NULL) {
         ASSERT(vt->cap == 0, "Vector capacity MUST be 0 when the buffer is NULL.");
         ASSERT(vt->len == 0, "Vector length MUST be 0 when the buffer is NULL.");
-        vt->buf = (U8 *)malloc(VEC_DEFAULT_CAPACITY_SIZE);
+        ASSERT(vt->fAllocMem, VEC_MEM_ALLOC_HAS_NOT_BEEN_INITIALIZED_MSG);
+        vt->buf = (U8 *)vt->fAllocMem(VEC_DEFAULT_CAPACITY_SIZE);
         ASSERT(vt->buf != NULL, "Failed to allocate memory to Vector buffer.");
         vt->cap = VEC_DEFAULT_CAPACITY_SIZE;
         return;
     }
 
     U64 newCap = vt->cap * 2;
-    U8 *newBuf = (U8 *)malloc(newCap * vt->elemSize);
+    ASSERT(vt->fAllocMem, VEC_MEM_ALLOC_HAS_NOT_BEEN_INITIALIZED_MSG);
+    U8 *newBuf = (U8 *)vt->fAllocMem(newCap * vt->elemSize);
     ASSERT(newBuf != NULL, "Failed to allocate memory to Vector new expanded buffer.");
     // copy the raw bytes to the new buffer
     for (U64 i = 0; i < vt->len * vt->elemSize; i++)
         newBuf[i] = vt->buf[i];
 
-    free(vt->buf);
+    ASSERT(vt->fDeallocMem, VEC_MEM_DEALLOC_HAS_NOT_BEEN_INITIALIZED_MSG);
+    FMemDealloc *const fDeallocMem = vt->fDeallocMem;
+    fDeallocMem(vt->buf);
     vt->buf = newBuf;
     vt->cap = newCap;
 }
