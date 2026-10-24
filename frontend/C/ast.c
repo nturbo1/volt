@@ -1,24 +1,21 @@
 #include "ast.h"
-#include "token.h"
 #include "base_inc.h"
+#include "token.h"
 
-void initAstNode(SParserASTNode* const node,
-                 const UToken* const tok,
-                 const EASTNodeType type)
+void initAstNode(SParserASTNode *const node, const UToken *const tok, const EASTNodeType type)
 {
     ASSERT(node, NULL_POINTER_ERROR_MSG_FORMAT, "SParserASTNode");
     ASSERT(tok, NULL_POINTER_ERROR_MSG_FORMAT, "UToken");
-    *( (UToken*)(node->tok) ) = *tok;
-    *( (EASTNodeType*)(node->type) ) = type;
+    *((UToken *)(node->tok)) = *tok;
+    *((EASTNodeType *)(node->type)) = type;
 }
 
-void initSStorageClass(SStorageClass* const strgClass, const UToken* const tok)
+void initSStorageClass(SStorageClass *const strgClass, const UToken *const tok)
 {
     ASSERT(strgClass, NULL_POINTER_ERROR_MSG_FORMAT, "SStorageClass");
     ASSERT(tok, NULL_POINTER_ERROR_MSG_FORMAT, "UToken");
-    initAstNode( &(strgClass->node), tok, EASTNODETYPE_STORAGE_CLASS );
-    switch(tok->base.type)
-    {
+    initAstNode(&(strgClass->node), tok, EASTNODETYPE_STORAGE_CLASS);
+    switch (tok->base.type) {
     case ETOKEN_STATIC:
         strgClass->type = ESTRGCLASSTYPE_STATIC;
         break;
@@ -31,7 +28,7 @@ void initSStorageClass(SStorageClass* const strgClass, const UToken* const tok)
         strgClass->type = ESTRGCLASSTYPE_TYPEDEF;
         break;
 
-    case ETOKEN_AUTO: 
+    case ETOKEN_AUTO:
         strgClass->type = ESTRGCLASSTYPE_AUTO;
         break;
 
@@ -46,13 +43,12 @@ void initSStorageClass(SStorageClass* const strgClass, const UToken* const tok)
     }
 }
 
-void initSTypeQual(STypeQual* const typeQual, const UToken* const tok)
+void initSTypeQual(STypeQual *const typeQual, const UToken *const tok)
 {
     ASSERT(typeQual, NULL_POINTER_ERROR_MSG_FORMAT, "STypeQual");
     ASSERT(tok, NULL_POINTER_ERROR_MSG_FORMAT, "UToken");
-    initAstNode( &(typeQual->node), tok, EASTNODETYPE_TYPE_QUALIFIER );
-    switch(tok->base.type)
-    {
+    initAstNode(&(typeQual->node), tok, EASTNODETYPE_TYPE_QUALIFIER);
+    switch (tok->base.type) {
     case ETOKEN_CONST:
         typeQual->type = ETYPEQUALTYPE_CONST;
         break;
@@ -72,14 +68,13 @@ void initSTypeQual(STypeQual* const typeQual, const UToken* const tok)
     }
 }
 
-void initSTypeSpecifier(STypeSpecifier* const typeSp, const UToken* const tok)
+void initSTypeSpecifier(STypeSpecifier *const typeSp, const UToken *const tok)
 {
     ASSERT(typeSp, NULL_POINTER_ERROR_MSG_FORMAT, "STypeSpecifier");
     ASSERT(tok, NULL_POINTER_ERROR_MSG_FORMAT, "UToken");
-    initAstNode( &(typeSp->node), tok, EASTNODETYPE_TYPE_SPECIFIER );
+    initAstNode(&(typeSp->node), tok, EASTNODETYPE_TYPE_SPECIFIER);
 
-    switch(tok->base.type)
-    {
+    switch (tok->base.type) {
     case ETOKEN_STRUCT:
         typeSp->type = ETYPESPECIFIERTYPE_STRUCT;
         break;
@@ -147,43 +142,33 @@ void initSTypeSpecifier(STypeSpecifier* const typeSp, const UToken* const tok)
     }
 }
 
-void initSFuncSpecifier(SFuncSpecifier* const funcSp, const UToken* const tok)
+void initSFuncSpecifier(SFuncSpecifier *const funcSp, const UToken *const tok)
 {
     ASSERT(funcSp, NULL_POINTER_ERROR_MSG_FORMAT, "SFuncSpecifier");
     ASSERT(tok, NULL_POINTER_ERROR_MSG_FORMAT, "UToken");
-    initAstNode( &(funcSp->node), tok, EASTNODETYPE_FUNC_SPECIFIER );
+    initAstNode(&(funcSp->node), tok, EASTNODETYPE_FUNC_SPECIFIER);
 }
 
-void initSDeclSpecifier(SDeclSpecifier* const declSp, const UToken* const tok)
+void initSDeclSpecifier(SDeclSpecifier *const declSp, const UToken *const tok)
 {
     ASSERT(declSp, NULL_POINTER_ERROR_MSG_FORMAT, "SDeclSpecifier");
     ASSERT(tok, NULL_POINTER_ERROR_MSG_FORMAT, "UToken");
-    initAstNode( &(declSp->node), tok, EASTNODETYPE_DECL_SPECIFIER );
+    initAstNode(&(declSp->node), tok, EASTNODETYPE_DECL_SPECIFIER);
 
-    if (eTokenIsStorageClass(tok->base.type))
-    {
+    if (eTokenIsStorageClass(tok->base.type)) {
         declSp->type = EDECLSPECIFIERTYPE_STORAGE_CLASS;
         initSStorageClass(declSp->core.storageClass, tok);
-    }
-    else if (eTokenIsTypeSpecifier(tok->base.type))
-    {
+    } else if (eTokenIsTypeSpecifier(tok->base.type)) {
         declSp->type = EDECLSPECIFIERTYPE_TYPE_SPECIFIER;
         initSTypeSpecifier(declSp->core.typeSpecifier, tok);
-    }
-    else if (eTokenIsTypeQualifier(tok->base.type))
-    {
+    } else if (eTokenIsTypeQualifier(tok->base.type)) {
         declSp->type = EDECLSPECIFIERTYPE_TYPE_QUALIFIER;
         initSTypeQual(declSp->core.storageClass, tok);
-    }
-    else if (eTokenIsFuncSpecifier(tok->base.type))
-    {
+    } else if (eTokenIsFuncSpecifier(tok->base.type)) {
         declSp->type = EDECLSPECIFIERTYPE_FUNC_SPECIFIER;
         initSFuncSpecifier(declSp->core.storageClass, tok);
-    }
-    else
-    {
-        ASSERT(false,
-               "Invalid declaration specifier token of type %s.",
-               eTokenToCStr(tok->base.type));
+    } else {
+        ASSERT(
+            false, "Invalid declaration specifier token of type %s.", eTokenToCStr(tok->base.type));
     }
 }

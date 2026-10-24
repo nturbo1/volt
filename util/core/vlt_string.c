@@ -16,7 +16,7 @@ String *new_string(const U8 *const bytes, const U64 len)
     const U8 *newStrBytes = (const U8 *)malloc(newStrLen + 1);
     ASSERT(newStrBytes != NULL, "Failed to allocate memory for a String object character bytes.");
     ASSERT_DBG(len == 0 || newStrLen <= len,
-        "New String length can't be bigger than a given string bytes length.");
+               "New String length can't be bigger than a given string bytes length.");
     for (U64 i = 0; i < newStrLen; i++)
         *((U8 *)&(newStrBytes[i])) = bytes[i];
 
@@ -36,8 +36,8 @@ String *new_stringFromLit(const char *bytes)
 String *stringCopy(const String *const source, const U64 startIdx, const U64 endIdx)
 {
     ASSERT(((source == NULL || source->len == 0) && startIdx == 0)
-            || (source != NULL && source->len > 0),
-        "Start index can't be >0 while the source string is NULL or has 0 length.");
+               || (source != NULL && source->len > 0),
+           "Start index can't be >0 while the source string is NULL or has 0 length.");
     ASSERT(startIdx < endIdx, "End index can't be less than or equal to start index.");
     ASSERT(endIdx <= source->len, "End index exceeds the string length.");
 

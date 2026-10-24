@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-void initCompiler(SCompiler* const comp, SDiagnostics* const diags)
+void initCompiler(SCompiler *const comp, SDiagnostics *const diags)
 {
     ASSERT(comp, NULL_POINTER_ERROR_MSG_FORMAT, "SCompiler");
     if (!diags)
@@ -14,10 +14,9 @@ void initCompiler(SCompiler* const comp, SDiagnostics* const diags)
     comp->bAbort = false;
 }
 
-void del_sCompiler(SCompiler* comp)
+void del_sCompiler(SCompiler *comp)
 {
-    if (comp)
-    {
+    if (comp) {
         del_sDiagnostics(comp->diags);
         free(comp);
     }

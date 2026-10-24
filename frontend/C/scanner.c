@@ -30,8 +30,8 @@ static EToken hmapStringEToken_get(HashMap *const hm, const String *const key)
     ASSERT(key->len > 0, "Empty string can't be a hashmap key.");
     MapElem *elem = hashmap_get(hm, key->bytes, key->len + 1);
     if (elem != NULL) {
-        ASSERT_DBG(
-            elem->valSize == sizeof(EToken), "HashMap element value size doesn't match EToken size.");
+        ASSERT_DBG(elem->valSize == sizeof(EToken),
+                   "HashMap element value size doesn't match EToken size.");
         return *(EToken *)(elem->val);
     }
 
@@ -68,8 +68,11 @@ static U8 peek(SScanSrc *src);
 // ===============================================================================
 static inline void setTokBase(UToken *tok, const U64 col, const U64 ln, EToken type);
 static void setTokNumber(UToken *tok, const U64 col, const U64 ln, EToken type, const U64 val);
-static inline void setTokIdent(
-    UToken *tok, const U64 col, const U64 ln, EToken type, String *lexeme);
+static inline void setTokIdent(UToken *tok,
+                               const U64 col,
+                               const U64 ln,
+                               EToken type,
+                               String *lexeme);
 
 static EToken scanIdentifier(SScanner *s);
 // static EToken scanInt(SScanner* s);
@@ -193,8 +196,8 @@ inline static U64 digitFromCharToInt(const U8 digitChar, const ENumBase base, EE
 
     default:
         ASSERT(false,
-            "This is ridiculous, bro! You should've checked the"
-            " number base enum value to be in the range! You did fuck up!");
+               "This is ridiculous, bro! You should've checked the"
+               " number base enum value to be in the range! You did fuck up!");
     }
 }
 
@@ -658,9 +661,9 @@ static EToken scanNumber(SScanner *s)
             return scanDecimal(s);
         else
             ASSERT(false,
-                "You should've peeked a character before going with"
-                " scanning a number, buddy! It shouldn't have gotten here"
-                " at all. So, you probably FUCKED UP something somewhere...");
+                   "You should've peeked a character before going with"
+                   " scanning a number, buddy! It shouldn't have gotten here"
+                   " at all. So, you probably FUCKED UP something somewhere...");
     }
 }
 
@@ -670,9 +673,9 @@ static EToken scanDecimal(SScanner *s)
     s->err = EERROR_TYPE_NO_ERROR;
     if (!isDecDigit(peekChar(s)))
         ASSERT(false,
-            "You should've peeked a character before going with"
-            " scanning a decimal, buddy! It shouldn't have gotten here"
-            " at all. So, you probably FUCKED UP something somewhere...");
+               "You should've peeked a character before going with"
+               " scanning a decimal, buddy! It shouldn't have gotten here"
+               " at all. So, you probably FUCKED UP something somewhere...");
 
     const U64 tokCol = s->colOffs + 1;
     const U64 tokLn = s->lnOffs + 1;
@@ -849,8 +852,11 @@ static inline void setTokBase(UToken *tok, const U64 col, const U64 ln, EToken t
     tok->base.type = type;
 }
 
-static inline void setTokIdent(
-    UToken *tok, const U64 col, const U64 ln, EToken type, String *lexeme)
+static inline void setTokIdent(UToken *tok,
+                               const U64 col,
+                               const U64 ln,
+                               EToken type,
+                               String *lexeme)
 {
     setTokBase(tok, col, ln, type);
     tok->ident.lexeme = lexeme;

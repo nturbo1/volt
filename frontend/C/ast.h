@@ -1,8 +1,7 @@
 #ifndef FRONTEND_C_AST_H
 #define FRONTEND_C_AST_H
 
-typedef enum EASTNodeType
-{
+typedef enum EASTNodeType {
     EASTNODETYPE_DECL,
     EASTNODETYPE_EXPR,
     EASTNODETYPE_STMT,
@@ -11,52 +10,39 @@ typedef enum EASTNodeType
     EASTNODETYPE_TYPE_QUALIFIER,
     EASTNODETYPE_FUNC_SPECIFIER,
     EASTNODETYPE_DECL_SPECIFIER,
-}
-EASTNodeType;
+} EASTNodeType;
 
-typedef struct SParserASTNode
-{
+typedef struct SParserASTNode {
     const UToken tok;
-    const EASTNodeType type;    
-}
-SParserASTNode;
+    const EASTNodeType type;
+} SParserASTNode;
 
-void initAstNode(SParserASTNode* const node, const UToken* const tok);
+void initAstNode(SParserASTNode *const node, const UToken *const tok);
 
-typedef struct SParserAST
-{
-    SParserASTNode* root;
-}
-SParserAST;
+typedef struct SParserAST {
+    SParserASTNode *root;
+} SParserAST;
 
-typedef struct SExpr
-{
+typedef struct SExpr {
     SParserASTNode node;
-}
-SExpr;
-
+} SExpr;
 
 ////////////////////////////////////////////////////////////////////////////////
 //////// Declarations
 ////////////////////////////////////////////////////////////////////////////////
-typedef enum ETypeQualType
-{
+typedef enum ETypeQualType {
     ETYPEQUALTYPE_CONST,
     ETYPEQUALTYPE_RESTRICT,
     ETYPEQUALTYPE_VOLATILE,
     ETYPEQUALTYPE_NONE
-}
-ETypeQualType;
-typedef struct STypeQual
-{
+} ETypeQualType;
+typedef struct STypeQual {
     const SParserASTNode node;
     ETypeQualType type;
-}
-STypeQual;
-void initSTypeQual(STypeQual* const typeQual, const UToken* const tok);
+} STypeQual;
+void initSTypeQual(STypeQual *const typeQual, const UToken *const tok);
 
-typedef enum ETypeSpecifierType
-{
+typedef enum ETypeSpecifierType {
     ETYPESPECIFIERTYPE_VOID,
     ETYPESPECIFIERTYPE_CHAR,
     ETYPESPECIFIERTYPE_SHORT,
@@ -72,239 +58,181 @@ typedef enum ETypeSpecifierType
     ETYPESPECIFIERTYPE_UNION,
     ETYPESPECIFIERTYPE_ENUM,
     ETYPESPECIFIERTYPE_IDENT
-}
-ETypeSpecifierType;
-typedef struct STypeSpecifier
-{
+} ETypeSpecifierType;
+typedef struct STypeSpecifier {
     const SParserASTNode node;
     const ETypeSpecifierType type;
-}
-STypeSpecifier;
-void initSTypeSpecifier(STypeSpecifier* const typeSp, const UToken* const tok);
+} STypeSpecifier;
+void initSTypeSpecifier(STypeSpecifier *const typeSp, const UToken *const tok);
 
-typedef struct SFuncSpecifier
-{
+typedef struct SFuncSpecifier {
     const SParserASTNode node;
-}
-SFuncSpecifier;
-void initSFuncSpecifier(SFuncSpecifier* const funcSp, const UToken* const tok);
+} SFuncSpecifier;
+void initSFuncSpecifier(SFuncSpecifier *const funcSp, const UToken *const tok);
 
-typedef enum EStorageClassType
-{
+typedef enum EStorageClassType {
     ESTRGCLASSTYPE_TYPEDEF,
     ESTRGCLASSTYPE_EXTERN,
     ESTRGCLASSTYPE_STATIC,
     ESTRGCLASSTYPE_AUTO,
     ESTRGCLASSTYPE_REGISTER,
     ESTRGCLASSTYPE_NONE
-}
-EStorageClassType;
-typedef struct SStorageClass
-{
+} EStorageClassType;
+typedef struct SStorageClass {
     const SParserASTNode node;
     EStorageClassType type;
-}
-SStorageClass;
-void initSStorageClass(SStorageClass* const strgClass, const UToken* const tok);
+} SStorageClass;
+void initSStorageClass(SStorageClass *const strgClass, const UToken *const tok);
 
-typedef enum EDeclSpecifierType
-{
+typedef enum EDeclSpecifierType {
     EDECLSPECIFIERTYPE_STORAGE_CLASS,
     EDECLSPECIFIERTYPE_TYPE_SPECIFIER,
     EDECLSPECIFIERTYPE_TYPE_QUALIFIER,
     EDECLSPECIFIERTYPE_FUNC_SPECIFIER,
-}
-EDeclSpecifierType;
-typedef union UDeclSpecifierCore
-{
+} EDeclSpecifierType;
+typedef union UDeclSpecifierCore {
     SStorageClass storageClass;
     STypeSpecifier typeSpecifier;
     STypeQual typeQual;
     SFuncSpecifier funcSpecifier;
-}
-UDeclSpecifierCore;
+} UDeclSpecifierCore;
 
-typedef struct SDeclSpecifier
-{
+typedef struct SDeclSpecifier {
     const SParserASTNode node;
     const EDeclSpecifierType type;
     const UDeclSpecifierCore core;
-}
-SDeclSpecifier;
-void initSDeclSpecifier(SDeclSpecifier* const declSp, const UToken* const tok);
+} SDeclSpecifier;
+void initSDeclSpecifier(SDeclSpecifier *const declSp, const UToken *const tok);
 
-typedef enum EDeclType
-{
+typedef enum EDeclType {
     EDECLTYPE_FUNC,
     EDECLTYPE_VAR,
     EDECLTYPE_STRUCT,
     EDECLTYPE_UNION,
     EDECLTYPE_ENUM,
-}
-EDeclType;
+} EDeclType;
 
 typedef struct SPointer SPointer;
 struct SPointer {
     const SParserASTNode node;
     // Vec<ETypeQual>
-    Vec* typeQuals;
-    const SPointer* next;
+    Vec *typeQuals;
+    const SPointer *next;
 };
 
-typedef enum EDirectDeclaratorType
-{
+typedef enum EDirectDeclaratorType {
     EDIRECTDECLARATORTYPE_IDENT,
     EDIRECTDECLARATORTYPE_ARRAY,
     EDIRECTDECLARATORTYPE_FUNC,
     EDIRECTDECLARATORTYPE_DECLARATOR,
-}
-EDirectDeclaratorType;
+} EDirectDeclaratorType;
 
-typedef struct SArrayDirectDeclarator
-{
+typedef struct SArrayDirectDeclarator {
     const SParserASTNode node;
-    Vec* typeQuals;
-}
-SArrayDirectDeclarator;
+    Vec *typeQuals;
+} SArrayDirectDeclarator;
 
-typedef enum EFunrParamType
-{
-    EFUNCPARAMTYPE_IDENT,
-    EFUNCPARAMTYPE_PARAMTYPE
-}
-EFuncParamType;
+typedef enum EFunrParamType { EFUNCPARAMTYPE_IDENT, EFUNCPARAMTYPE_PARAMTYPE } EFuncParamType;
 
 typedef struct SDeclarator SDeclarator;
-typedef struct SFuncParamDecl
-{
+typedef struct SFuncParamDecl {
     const SParserASTNode node;
-    SDeclSpecifier* declSpecifier;
-    SDeclarator* declarator;
-}
-SFuncParamDecl;
+    SDeclSpecifier *declSpecifier;
+    SDeclarator *declarator;
+} SFuncParamDecl;
 
-typedef union UFuncParamCore
-{
+typedef union UFuncParamCore {
     String ident;
     SFuncParamDecl paramDecl;
-}
-UFuncParamCore;
+} UFuncParamCore;
 
-typedef union SFuncParam
-{
+typedef union SFuncParam {
     const SParserASTNode node;
     EFuncParamType type;
-    UFuncParamCore* core;
-}
-SFuncParam;
+    UFuncParamCore *core;
+} SFuncParam;
 
-typedef struct SFuncDirectDeclarator
-{
+typedef struct SFuncDirectDeclarator {
     const SParserASTNode node;
     // Vec<SFuncParam>
-    Vec* params;
-}
-SFuncDirectDeclarator;
+    Vec *params;
+} SFuncDirectDeclarator;
 
-typedef union UDirectDeclaratorCore
-{
-    String* ident;
+typedef union UDirectDeclaratorCore {
+    String *ident;
     SArrayDirectDeclarator array;
     SFuncDirectDeclarator func;
-}
-UDirectDeclaratorCore;
+} UDirectDeclaratorCore;
 
-typedef struct SDirectDeclarator
-{
+typedef struct SDirectDeclarator {
     const SParserASTNode node;
     EDirectDeclaratorType type;
     UDirectDeclaratorCore core;
-}
-SDirectDeclarator;
+} SDirectDeclarator;
 
-struct SDeclarator
-{
+struct SDeclarator {
     const SParserASTNode node;
-    SPointer* pointer;
-    SDirectDeclarator* directDeclarator;
+    SPointer *pointer;
+    SDirectDeclarator *directDeclarator;
 };
 
-typedef struct SInitializer
-{
+typedef struct SInitializer {
     const SParserASTNode node;
-}
-SInitializer;
+} SInitializer;
 
-typedef struct SInitDeclarator
-{
+typedef struct SInitDeclarator {
     const SParserASTNode node;
-    SDeclarator* declarator;
-    SInitializer* initializer; // optional
-}
-SInitDeclarator;
+    SDeclarator *declarator;
+    SInitializer *initializer; // optional
+} SInitDeclarator;
 
 GEN_VECTOR_OF(SDeclSpecifier)
 
-typedef struct SDecl
-{
+typedef struct SDecl {
     const SParserASTNode node;
     // Vec<SDeclSpecifier>
-    Vec* declSpecifiers;
+    Vec *declSpecifiers;
     // Vec<SInitDeclarator>
-    Vec* initDeclaratorList; // optional
+    Vec *initDeclaratorList; // optional
     const EDeclType declType; // For deciphering the underlying obj type
                               // when `SDecl *` is used.
-}
-SDecl;
+} SDecl;
 
-typedef struct SStructDecl
-{
+typedef struct SStructDecl {
     SDecl decl;
     // TODO: fields container
-}
-SStructDecl;
+} SStructDecl;
 
-typedef struct SEnumDecl
-{
+typedef struct SEnumDecl {
     SDecl decl;
     // TODO: enum members container
-}
-SEnumDecl;
+} SEnumDecl;
 
-typedef struct SUnionDecl
-{
+typedef struct SUnionDecl {
     SDecl decl;
     // TODO: union fields/members container
-}
-SUnionDecl;
+} SUnionDecl;
 
-typedef struct SFuncDecl
-{
+typedef struct SFuncDecl {
     SDecl decl;
     // TODO: parameters container
     // TODO: func body
     // TODO: return type
     // TODO: identifier/name
-}
-SFuncDecl;
+} SFuncDecl;
 
-typedef struct SVarDecl
-{
+typedef struct SVarDecl {
     SDecl decl;
     // TODO: data type
     // TODO: identifier/name
     // TODO: value
-}
-SVarDecl;
-
+} SVarDecl;
 
 ////////////////////////////////////////////////////////////////////////////////
 //////// Statements
 ////////////////////////////////////////////////////////////////////////////////
-typedef struct SStmt
-{
+typedef struct SStmt {
     SParserASTNode node;
-}
-SStmt;
+} SStmt;
 
 #endif // FRONTEND_C_AST_H

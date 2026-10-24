@@ -1,6 +1,6 @@
+#include "base_inc.h"
 #include "scanner.h"
 #include "vctest.h"
-#include "base_inc.h"
 
 #include <stdio.h>
 
@@ -21,19 +21,19 @@ TEST(testNewScanner,
      " first/next token")
 {
     // GIVEN
-    SStringBuilder* sb = new_stringBuilder();
+    SStringBuilder *sb = new_stringBuilder();
     VCTEST_ASSERT_TRUE(sb != NULL);
-    String* testFilepath = new_stringFromLit(__FILE__);
+    String *testFilepath = new_stringFromLit(__FILE__);
     VCTEST_ASSERT_TRUE(testFilepath != NULL);
-    String* testFileDirPath = dirName(testFilepath);
+    String *testFileDirPath = dirName(testFilepath);
     VCTEST_ASSERT_TRUE(testFileDirPath != NULL);
     sb_appendString(sb, testFileDirPath);
     sb_appendStrLit(sb, "tests/scanner/punctuators.c1");
-    String* filepath = sb_toString(sb);
+    String *filepath = sb_toString(sb);
     VCTEST_ASSERT_TRUE(filepath != NULL);
 
     // WHEN
-    SScanner* s = new_scanner(filepath);
+    SScanner *s = new_scanner(filepath);
 
     // THEN
     VCTEST_ASSERT_TRUE(s != NULL);
@@ -64,37 +64,35 @@ TEST(testScanPunctuators,
     const U64 tokensSize = 13;
     // Tokens and their order MUST match the tokens and the
     // order they appear in inside the test file
-    EToken tokens[13] = {
-        ETOKEN_LPAREN, // (
-        ETOKEN_LBRACK, // [
-        ETOKEN_LBRACE, // {
+    EToken tokens[13] = { ETOKEN_LPAREN, // (
+                          ETOKEN_LBRACK, // [
+                          ETOKEN_LBRACE, // {
 
-        ETOKEN_RPAREN, // )
-        ETOKEN_RBRACK, // ]
-        ETOKEN_RBRACE, // }
+                          ETOKEN_RPAREN, // )
+                          ETOKEN_RBRACK, // ]
+                          ETOKEN_RBRACE, // }
 
-        ETOKEN_COMMA, // ,
-        ETOKEN_PERIOD, // .
-        ETOKEN_COLON, // :
-        ETOKEN_SEMICOLON, // ;
-        ETOKEN_ELLIPSIS, // ...
-        ETOKEN_ASTERISK, // *
-        ETOKEN_EOF
-    };
+                          ETOKEN_COMMA, // ,
+                          ETOKEN_PERIOD, // .
+                          ETOKEN_COLON, // :
+                          ETOKEN_SEMICOLON, // ;
+                          ETOKEN_ELLIPSIS, // ...
+                          ETOKEN_ASTERISK, // *
+                          ETOKEN_EOF };
 
     // GIVEN
-    SStringBuilder* sb = new_stringBuilder();
+    SStringBuilder *sb = new_stringBuilder();
     VCTEST_ASSERT_TRUE(sb != NULL);
-    String* testFilepath = new_stringFromLit(__FILE__);
+    String *testFilepath = new_stringFromLit(__FILE__);
     VCTEST_ASSERT_TRUE(testFilepath != NULL);
-    String* testFileDirPath = dirName(testFilepath);
+    String *testFileDirPath = dirName(testFilepath);
     VCTEST_ASSERT_TRUE(testFileDirPath != NULL);
     sb_appendString(sb, testFileDirPath);
     sb_appendStrLit(sb, "tests/scanner/punctuators.c1");
-    String* filepath = sb_toString(sb);
+    String *filepath = sb_toString(sb);
     VCTEST_ASSERT_TRUE(filepath != NULL);
 
-    SScanner* s = new_scanner(filepath);
+    SScanner *s = new_scanner(filepath);
     VCTEST_ASSERT_TRUE(s != NULL);
     VCTEST_ASSERT_TRUE(s->src->file != NULL);
     VCTEST_ASSERT_TRUE(stringEqual(s->filepath, filepath));
@@ -108,8 +106,7 @@ TEST(testScanPunctuators,
     VCTEST_ASSERT_TRUE(s->tok.base.col == 0);
     VCTEST_ASSERT_TRUE(s->tok.base.type == ETOKEN_NO_VALUE);
 
-    for (U64 i = 0; i < tokensSize; i++)
-    {
+    for (U64 i = 0; i < tokensSize; i++) {
         // WHEN
         EToken tok = nextTok(s);
 
@@ -133,60 +130,29 @@ TEST(testScanKeywords,
     const U64 tokensSize = eTokenKeywordEnd - eTokenKeywordBeg;
     // Tokens and their order MUST match the tokens and the
     // order they appear in inside the test file
-    EToken tokens[eTokenKeywordEnd - eTokenKeywordBeg] = {
-        ETOKEN_CONST,
-        ETOKEN_IF,
-        ETOKEN_ELSE,
-        ETOKEN_FOR,
-        ETOKEN_BREAK,
-        ETOKEN_CONTINUE,
-        ETOKEN_GOTO,
-        ETOKEN_RETURN,
-        ETOKEN_STRUCT,
-        ETOKEN_UNION,
-        ETOKEN_ENUM,
-        ETOKEN_SWITCH,
-        ETOKEN_CASE,
-        ETOKEN_DEFAULT,
-        ETOKEN_WHILE,
-        ETOKEN_DO,
-        ETOKEN_VOID,
-        ETOKEN_STATIC,
-        ETOKEN_EXTERN,
-        ETOKEN_REGISTER,
-        ETOKEN_SIGNED,
-        ETOKEN_UNSIGNED,
-        ETOKEN_SIZEOF,
-        ETOKEN_TYPEDEF,
-        ETOKEN_VOLATILE,
-        ETOKEN_AUTO, 
-        ETOKEN_INLINE,
-        ETOKEN_RESTRICT,
-        ETOKEN__COMPLEX,
-        ETOKEN__IMAGINARY,
-        ETOKEN__BOOL,
-        ETOKEN_CHAR,
-        ETOKEN_SHORT,
-        ETOKEN_INT,
-        ETOKEN_LONG,
-        ETOKEN_FLOAT,
-        ETOKEN_DOUBLE,
-        ETOKEN_EOF
-    };
+    EToken tokens[eTokenKeywordEnd - eTokenKeywordBeg]
+        = { ETOKEN_CONST,    ETOKEN_IF,       ETOKEN_ELSE,     ETOKEN_FOR,      ETOKEN_BREAK,
+            ETOKEN_CONTINUE, ETOKEN_GOTO,     ETOKEN_RETURN,   ETOKEN_STRUCT,   ETOKEN_UNION,
+            ETOKEN_ENUM,     ETOKEN_SWITCH,   ETOKEN_CASE,     ETOKEN_DEFAULT,  ETOKEN_WHILE,
+            ETOKEN_DO,       ETOKEN_VOID,     ETOKEN_STATIC,   ETOKEN_EXTERN,   ETOKEN_REGISTER,
+            ETOKEN_SIGNED,   ETOKEN_UNSIGNED, ETOKEN_SIZEOF,   ETOKEN_TYPEDEF,  ETOKEN_VOLATILE,
+            ETOKEN_AUTO,     ETOKEN_INLINE,   ETOKEN_RESTRICT, ETOKEN__COMPLEX, ETOKEN__IMAGINARY,
+            ETOKEN__BOOL,    ETOKEN_CHAR,     ETOKEN_SHORT,    ETOKEN_INT,      ETOKEN_LONG,
+            ETOKEN_FLOAT,    ETOKEN_DOUBLE,   ETOKEN_EOF };
 
     // GIVEN
-    SStringBuilder* sb = new_stringBuilder();
+    SStringBuilder *sb = new_stringBuilder();
     VCTEST_ASSERT_TRUE(sb != NULL);
-    String* testFilepath = new_stringFromLit(__FILE__);
+    String *testFilepath = new_stringFromLit(__FILE__);
     VCTEST_ASSERT_TRUE(testFilepath != NULL);
-    String* testFileDirPath = dirName(testFilepath);
+    String *testFileDirPath = dirName(testFilepath);
     VCTEST_ASSERT_TRUE(testFileDirPath != NULL);
     sb_appendString(sb, testFileDirPath);
     sb_appendStrLit(sb, "tests/scanner/keywords.c1");
-    String* filepath = sb_toString(sb);
+    String *filepath = sb_toString(sb);
     VCTEST_ASSERT_TRUE(filepath != NULL);
 
-    SScanner* s = new_scanner(filepath);
+    SScanner *s = new_scanner(filepath);
     VCTEST_ASSERT_TRUE(s != NULL);
     VCTEST_ASSERT_TRUE(s->src->file != NULL);
     VCTEST_ASSERT_TRUE(stringEqual(s->filepath, filepath));
@@ -201,8 +167,7 @@ TEST(testScanKeywords,
     VCTEST_ASSERT_TRUE(s->tok.base.type == ETOKEN_NO_VALUE);
 
     U64 tokLn = 1;
-    for (U64 i = 0; i < tokensSize; i++)
-    {
+    for (U64 i = 0; i < tokensSize; i++) {
         // WHEN
         EToken tok = nextTok(s);
 
@@ -228,18 +193,18 @@ TEST(testScanComments,
      " correct comments text")
 {
     // GIVEN
-    SStringBuilder* sb = new_stringBuilder();
+    SStringBuilder *sb = new_stringBuilder();
     VCTEST_ASSERT_TRUE(sb != NULL);
-    String* testFilepath = new_stringFromLit(__FILE__);
+    String *testFilepath = new_stringFromLit(__FILE__);
     VCTEST_ASSERT_TRUE(testFilepath != NULL);
-    String* testFileDirPath = dirName(testFilepath);
+    String *testFileDirPath = dirName(testFilepath);
     VCTEST_ASSERT_TRUE(testFileDirPath != NULL);
     sb_appendString(sb, testFileDirPath);
     sb_appendStrLit(sb, "tests/scanner/comments.c1");
-    String* filepath = sb_toString(sb);
+    String *filepath = sb_toString(sb);
     VCTEST_ASSERT_TRUE(filepath != NULL);
 
-    SScanner* s = new_scanner(filepath);
+    SScanner *s = new_scanner(filepath);
     VCTEST_ASSERT_TRUE(s != NULL);
     VCTEST_ASSERT_TRUE(s->src->file != NULL);
     VCTEST_ASSERT_TRUE(stringEqual(s->filepath, filepath));
@@ -255,8 +220,7 @@ TEST(testScanComments,
 
     U64 tokLn = 1;
     const U64 commentsCount = 6;
-    for (U64 i = 0; i < commentsCount; i++)
-    {
+    for (U64 i = 0; i < commentsCount; i++) {
         // WHEN
         EToken tok = nextTok(s);
 
@@ -285,64 +249,63 @@ TEST(testScanOperators,
     const U64 tokensSize = eTokenOperatorEnd - eTokenOperatorBeg;
     // Tokens and their order MUST match the tokens and the
     // order they appear in inside the test input file
-    const EToken tokens[eTokenOperatorEnd - eTokenOperatorBeg] = {
-        ETOKEN_ADD,
-        ETOKEN_SUB,
-        ETOKEN_ASTERISK, // Scanner/lexer can't figure out if '*' is a
-                         // multiplication operator or a punctuator since
-                         // it doesn't enough context for it. So, it returns
-                         // it as an asterisk (a punctuator) and leave it for
-                         // the parser to decipher the exact type of the token
-                         // depending on the context.
-        ETOKEN_QUO,
-        ETOKEN_REM,
-        ETOKEN_AND,
-        ETOKEN_OR,
-        ETOKEN_XOR,
-        ETOKEN_SHL,
-        ETOKEN_SHR,
-        ETOKEN_AND_NOT,
-        ETOKEN_ADD_ASSIGN,
-        ETOKEN_SUB_ASSIGN,
-        ETOKEN_MUL_ASSIGN,
-        ETOKEN_QUO_ASSIGN,
-        ETOKEN_REM_ASSIGN,
-        ETOKEN_AND_ASSIGN,
-        ETOKEN_OR_ASSIGN,
-        ETOKEN_XOR_ASSIGN,
-        ETOKEN_SHL_ASSIGN,
-        ETOKEN_SHR_ASSIGN,
-        ETOKEN_AND_NOT_ASSIGN,
-        ETOKEN_LAND,
-        ETOKEN_LOR,
-        ETOKEN_RARROW,
-        ETOKEN_INC,
-        ETOKEN_DEC,
-        ETOKEN_EQL,
-        ETOKEN_LSS,
-        ETOKEN_GTR,
-        ETOKEN_ASSIGN,
-        ETOKEN_NOT,
-        ETOKEN_NEQ,
-        ETOKEN_LEQ,
-        ETOKEN_GEQ,
+    const EToken tokens[eTokenOperatorEnd - eTokenOperatorBeg]
+        = { ETOKEN_ADD,
+            ETOKEN_SUB,
+            ETOKEN_ASTERISK, // Scanner/lexer can't figure out if '*' is a
+                             // multiplication operator or a punctuator since
+                             // it doesn't enough context for it. So, it returns
+                             // it as an asterisk (a punctuator) and leave it for
+                             // the parser to decipher the exact type of the token
+                             // depending on the context.
+            ETOKEN_QUO,
+            ETOKEN_REM,
+            ETOKEN_AND,
+            ETOKEN_OR,
+            ETOKEN_XOR,
+            ETOKEN_SHL,
+            ETOKEN_SHR,
+            ETOKEN_AND_NOT,
+            ETOKEN_ADD_ASSIGN,
+            ETOKEN_SUB_ASSIGN,
+            ETOKEN_MUL_ASSIGN,
+            ETOKEN_QUO_ASSIGN,
+            ETOKEN_REM_ASSIGN,
+            ETOKEN_AND_ASSIGN,
+            ETOKEN_OR_ASSIGN,
+            ETOKEN_XOR_ASSIGN,
+            ETOKEN_SHL_ASSIGN,
+            ETOKEN_SHR_ASSIGN,
+            ETOKEN_AND_NOT_ASSIGN,
+            ETOKEN_LAND,
+            ETOKEN_LOR,
+            ETOKEN_RARROW,
+            ETOKEN_INC,
+            ETOKEN_DEC,
+            ETOKEN_EQL,
+            ETOKEN_LSS,
+            ETOKEN_GTR,
+            ETOKEN_ASSIGN,
+            ETOKEN_NOT,
+            ETOKEN_NEQ,
+            ETOKEN_LEQ,
+            ETOKEN_GEQ,
 
-        ETOKEN_EOF
-    };
+            ETOKEN_EOF };
 
     // GIVEN
-    SStringBuilder* sb = new_stringBuilder();
+    SStringBuilder *sb = new_stringBuilder();
     VCTEST_ASSERT_TRUE(sb != NULL);
-    String* testFilepath = new_stringFromLit(__FILE__);
+    String *testFilepath = new_stringFromLit(__FILE__);
     VCTEST_ASSERT_TRUE(testFilepath != NULL);
-    String* testFileDirPath = dirName(testFilepath);
+    String *testFileDirPath = dirName(testFilepath);
     VCTEST_ASSERT_TRUE(testFileDirPath != NULL);
     sb_appendString(sb, testFileDirPath);
     sb_appendStrLit(sb, "tests/scanner/operators.c1");
-    String* filepath = sb_toString(sb);
+    String *filepath = sb_toString(sb);
     VCTEST_ASSERT_TRUE(filepath != NULL);
 
-    SScanner* s = new_scanner(filepath);
+    SScanner *s = new_scanner(filepath);
     VCTEST_ASSERT_TRUE(s != NULL);
     VCTEST_ASSERT_TRUE(s->src->file != NULL);
     VCTEST_ASSERT_TRUE(stringEqual(s->filepath, filepath));
@@ -357,8 +320,7 @@ TEST(testScanOperators,
     VCTEST_ASSERT_TRUE(s->tok.base.type == ETOKEN_NO_VALUE);
 
     U64 tokLn = 1;
-    for (U64 i = 0; i < tokensSize; i++)
-    {
+    for (U64 i = 0; i < tokensSize; i++) {
         // WHEN
         EToken tok = nextTok(s);
 
@@ -385,46 +347,44 @@ TEST(testScanDecimalLiterals,
     const U64 tokensSize = 24;
     // Tokens and their order MUST match the tokens and the
     // order they appear in inside the test input file
-    const U64 intValues[24] = {
-        0,
-        1,
-        2,
-        9,
-        10,
-        42,
-        99,
-        100,
-        123,
-        255,
-        256,
-        512,
-        999,
-        1000,
-        12345,
-        123456,
-        999999,
-        1000000,
-        2147483647,
-        2147483648,
-        4294967295,
-        4294967296,
-        9223372036854775,
-        1844674407370955
-    };
+    const U64 intValues[24] = { 0,
+                                1,
+                                2,
+                                9,
+                                10,
+                                42,
+                                99,
+                                100,
+                                123,
+                                255,
+                                256,
+                                512,
+                                999,
+                                1000,
+                                12345,
+                                123456,
+                                999999,
+                                1000000,
+                                2147483647,
+                                2147483648,
+                                4294967295,
+                                4294967296,
+                                9223372036854775,
+                                1844674407370955 };
 
     // GIVEN
-    SStringBuilder* sb = new_stringBuilder();
+    SStringBuilder *sb = new_stringBuilder();
     VCTEST_ASSERT_TRUE(sb != NULL);
-    String* testFilepath = new_stringFromLit(__FILE__);
+    String *testFilepath = new_stringFromLit(__FILE__);
     VCTEST_ASSERT_TRUE(testFilepath != NULL);
-    String* testFileDirPath = dirName(testFilepath);
+    String *testFileDirPath = dirName(testFilepath);
     VCTEST_ASSERT_TRUE(testFileDirPath != NULL);
     sb_appendString(sb, testFileDirPath);
     sb_appendStrLit(sb, "tests/scanner/numbers/decimals.c1");
-    String* filepath = sb_toString(sb);
+    String *filepath = sb_toString(sb);
     VCTEST_ASSERT_TRUE(filepath != NULL);
 
-    SScanner* s = new_scanner(filepath);
+    SScanner *s = new_scanner(filepath);
     VCTEST_ASSERT_TRUE(s != NULL);
     VCTEST_ASSERT_TRUE(s->src->file != NULL);
     VCTEST_ASSERT_TRUE(stringEqual(s->filepath, filepath));
@@ -439,8 +399,7 @@ TEST(testScanDecimalLiterals,
     VCTEST_ASSERT_TRUE(s->tok.base.type == ETOKEN_NO_VALUE);
 
     U64 tokLn = 1;
-    for (U64 i = 0; i < tokensSize; i++)
-    {
+    for (U64 i = 0; i < tokensSize; i++) {
         // WHEN
         EToken tok = nextTok(s);
 

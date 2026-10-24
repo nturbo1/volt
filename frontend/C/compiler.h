@@ -5,14 +5,12 @@
 
 #include <stdbool.h>
 
-typedef struct SCompiler
-{
-    SDiagnostics* diags;
+typedef struct SCompiler {
+    SDiagnostics *diags;
     Bool bAbort;
-}
-SCompiler;
+} SCompiler;
 
-void initSCompiler(SCompiler* const comp, SDiagnostics* const diags);
-void del_sCompiler(SCompiler* comp);
+void initSCompiler(SCompiler *const comp, SDiagnostics *const diags);
+void del_sCompiler(SCompiler *comp);
 
 #endif // FRONTEND_C_COMPILER_H

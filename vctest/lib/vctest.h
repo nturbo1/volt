@@ -35,8 +35,10 @@ extern VCTestState _vctest_curr_test_state;
             _vctest_curr_test_state.failed = true;                                                 \
             _vctest_curr_test_state.fail_file = __FILE__;                                          \
             _vctest_curr_test_state.fail_line = __LINE__;                                          \
-            snprintf(_vctest_curr_test_state.fail_msg, sizeof(_vctest_curr_test_state.fail_msg),   \
-                "ASSERT_TRUE(%s) failed", #cond);                                                  \
+            snprintf(_vctest_curr_test_state.fail_msg,                                             \
+                     sizeof(_vctest_curr_test_state.fail_msg),                                     \
+                     "ASSERT_TRUE(%s) failed",                                                     \
+                     #cond);                                                                       \
             return;                                                                                \
         }                                                                                          \
     } while (0)

@@ -11,14 +11,14 @@
 // =====================================================================
 typedef struct STokWind STokWind;
 typedef struct SParser {
-    SScanner* scanner;
-    SParserAST* ast;
-    SErrHandler* eh;
+    SScanner *scanner;
+    SParserAST *ast;
+    SErrHandler *eh;
     // TODO: add separate buffers for prev and next tokens
 } SParser;
 
-SParser* new_parser(const String* const filepath);
-void del_parser(SParser* parser);
+SParser *new_parser(const String *const filepath);
+void del_parser(SParser *parser);
 
 /*
  * - Returns the next nth token in the tokens window where
@@ -33,12 +33,12 @@ void del_parser(SParser* parser);
  *
  * @return the next nth token
  */
-const UToken* parserPeekNextNToken(SParser* const parser, const U64 n);
+const UToken *parserPeekNextNToken(SParser *const parser, const U64 n);
 
 /*
  * @return the next token in the token window buffer.
  */
-const UToken* parserPeekToken(SParser* const parser);
+const UToken *parserPeekToken(SParser *const parser);
 
 /*
  * Advances the token position in the tokens window buffer after
@@ -46,7 +46,7 @@ const UToken* parserPeekToken(SParser* const parser);
  *
  * @return the next token
  */
-const UToken* parserNextToken(SParser* const parser);
+const UToken *parserNextToken(SParser *const parser);
 
 /*
  * - Returns the previous nth token in the tokens window where
@@ -61,9 +61,9 @@ const UToken* parserNextToken(SParser* const parser);
  *
  * @return the previous nth token
  */
-const UToken* parserPeekPrevNToken(SParser* const parser, const U64 n);
+const UToken *parserPeekPrevNToken(SParser *const parser, const U64 n);
 
-void parserBuildAST(SParser* const parser);
+void parserBuildAST(SParser *const parser);
 
 // =====================================================================
 // ============================ STokWind ===============================
@@ -120,7 +120,7 @@ void parserBuildAST(SParser* const parser);
  *
  */
 struct STokWind {
-    UToken* toks;
+    UToken *toks;
     U64 next; // index of the next token
     U64 len; // fixed length of the tokens buffer
     U64 end; // end index of the window
@@ -138,18 +138,18 @@ struct STokWind {
  *
  *         `true` otherwise
  */
-Bool tokWind_advance(STokWind* const tw, const UToken* const tok);
+Bool tokWind_advance(STokWind *const tw, const UToken *const tok);
 
 /*
  * @return true if the last token in the window buffer is of
  *         type `ETOKEN_EOF` and returns false otherwise.
  */
-inline Bool tokWind_isEofReached(const STokWind* const tw)
+inline Bool tokWind_isEofReached(const STokWind *const tw)
 {
     ASSERT(tw, NULL_POINTER_ERROR_MSG_FORMAT, "STokWind");
     return (tw->toks[tw->end].base.type == ETOKEN_EOF);
 }
 
-const UToken* tokWind_getNext(const STokWind* const tw);
+const UToken *tokWind_getNext(const STokWind *const tw);
 
 #endif // FRONTEND_C_PARSER_H

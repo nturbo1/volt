@@ -180,8 +180,10 @@ typedef struct STokenInfo {
     const String *const lexeme;
 } STokenInfo;
 
-STokenInfo *new_sTokenInfo(
-    const U64 col, const U64 ln, const EToken tok, const String *const lexeme);
+STokenInfo *new_sTokenInfo(const U64 col,
+                           const U64 ln,
+                           const EToken tok,
+                           const String *const lexeme);
 
 void del_sTokenInfo(STokenInfo *tokInfo);
 

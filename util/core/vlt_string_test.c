@@ -10,8 +10,8 @@ typedef struct StringTestInput {
 } StringTestInput;
 
 TEST(whenNewString_thenNonNullPointerToStringMustBeReturned,
-    "When new_string, then a non-NULL pointer to a String"
-    " obj with properly initialized fields MUST be returned")
+     "When new_string, then a non-NULL pointer to a String"
+     " obj with properly initialized fields MUST be returned")
 {
     const int testInputsNullTerminatedSize = 9;
     const StringTestInput inputsNullTerminated[9] = {
@@ -116,8 +116,8 @@ TEST(whenNewString_thenNonNullPointerToStringMustBeReturned,
 }
 
 TEST(whenNewStringFromLit_thenNonNullPointerToStringMustBeReturned,
-    "When new_stringFromLit, then a non-NULL pointer to a String"
-    " obj with properly initialized fields MUST be returned")
+     "When new_stringFromLit, then a non-NULL pointer to a String"
+     " obj with properly initialized fields MUST be returned")
 {
     const int testInputsSize = 8;
     const char *inputs[8] = {
