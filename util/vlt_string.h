@@ -2,9 +2,7 @@
 #define VLT_STRING_H
 
 #include "config.h"
-#include "vlt_memory.h"
-
-#include <stdbool.h>
+#include "core/vlt_memory.h"
 
 // Represents an immutable string object
 typedef struct {

@@ -2,7 +2,7 @@
 #define BASE_VLT_HASHMAP_H
 
 #include "config.h"
-#include "vlt_container_base.h"
+#include "vlt_container.h"
 #include "vlt_memory.h"
 
 #include <stdio.h>

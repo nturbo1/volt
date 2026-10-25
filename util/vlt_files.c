@@ -1,6 +1,6 @@
 #include "vlt_files.h"
 #include "core/vlt_assert.h"
-#include "core/vlt_string.h"
+#include "vlt_string.h"
 
 String *dirName(const String *const filepath)
 {
