@@ -1,7 +1,7 @@
 #ifndef FRONTEND_C_SCANNER_H
 #define FRONTEND_C_SCANNER_H
 
-#include "base_inc.h"
+#include "config.h"
 #include "diagnostics.h"
 #include "token.h"
 

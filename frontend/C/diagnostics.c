@@ -1,174 +1,58 @@
 #include "diagnostics.h"
-#include "base_inc.h"
+#include "config.h"
+#include "vlt_assert.h"
+#include "vlt_vector.h"
 
-#include <stdbool.h>
-#include <stddef.h>
 #include <stdio.h>
-#include <stdlib.h>
 
-// ===========================================================================
-// =============================== SDiagnostics ==============================
-// ===========================================================================
+#define DEFAULT_MAX_ERROR_C0UNT 20
 
-SDiagnostics *new_sDiagnostics(const U64 errCountMax, FILE *const out)
+void diagnosticHandler_init(SDiagnosticHandler *const diagnosticHandler,
+                            FILE *const out,
+                            const I64 maxErrCount)
 {
-    SDiagnostics *diags = (SDiagnostics *)malloc(sizeof(SDiagnostics));
-    ASSERT(diags, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SDiagnostics obj");
-    diags->eh = new_sErrHandler(errCountMax);
-    diags->out = out ? out : stderr;
-
-    return diags;
-}
-
-void del_sDiagnostics(SDiagnostics *diags)
-{
-    if (diags) {
-        del_sErrHandler((SErrHandler *)(diags->eh));
-        fclose(diags->out);
-        free(diags);
+    ASSERT(diagnosticHandler, NULL_POINTER_ERROR_MSG_FORMAT, "SDiagnosticHandler");
+    *(FILE **)&(diagnosticHandler->out) = out ? out : stderr;
+    *(I64 *)&(diagnosticHandler->maxErrCount)
+        = maxErrCount > 0 ? maxErrCount : DEFAULT_MAX_ERROR_C0UNT;
+    if (diagnosticHandler->errors) {
+        del_vec(diagnosticHandler);
+        *(Vec **)&(diagnosticHandler->errors) = NULL;
     }
-}
+    *(Vec **)&(diagnosticHandler->errors) = new_vecSDiagnosticInfo(0, 0, NULL, NULL, NULL);
 
-// ===========================================================================
-// =============================== SErrHandler ===============================
-// ===========================================================================
-SErrHandler *new_sErrHandler(const U64 errCountMax)
-{
-    SErrHandler *eh = (SErrHandler *)malloc(sizeof(SErrHandler));
-    ASSERT(eh != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SErrHandler obj");
-    *((U64 *)&(eh->errLimit)) = errCountMax;
-    eh->errs = new_vecSError(0, eh->errLimit);
-
-    return eh;
-}
-
-void del_sErrHandler(SErrHandler *eh)
-{
-    if (eh != NULL) {
-        del_vec(eh->errs);
-        free(eh);
+    if (diagnosticHandler->warnings) {
+        del_vec(diagnosticHandler->warnings);
+        *(Vec **)&(diagnosticHandler->warnings) = NULL;
     }
+    *(Vec **)&(diagnosticHandler->warnings) = new_vecSDiagnosticInfo(0, 0, NULL, NULL, NULL);
 }
 
-Bool eh_handle(SErrHandler *const eh, const SError *const err)
+Bool diagnosticHandler_handle(SDiagnosticHandler *const diagnosticHandler,
+                              const EDiagnostic diagnostic,
+                              const STokenInfo *const tokenInfo)
 {
-    if (eh->errs->len < eh->errLimit)
-        vecSError_push(eh->errs, err);
+    ASSERT(diagnosticHandler, NULL_POINTER_ERROR_MSG_FORMAT, "SDiagnosticHandler");
+    ASSERT(tokenInfo, NULL_POINTER_ERROR_MSG_FORMAT, "STokenInfo");
+    ASSERT_DBG(EDiagnosticBeg < diagnostic && diagnostic < EDiagnosticEnd,
+               S_ENUM_VALUE_D_IS_OUT_OF_RANGE_FORMAT,
+               "EDiagnostic",
+               diagnostic);
 
-    return eh_isLimitHit(eh);
-}
+    if (eDiagnostic_isFatal() || diagnosticHandler_errCountMaxLimReached(diagnosticHandler))
+        return false;
 
-Bool eh_isLimitHit(const SErrHandler *const eh)
-{
-    if (eh->errs->len >= eh->errLimit)
-        return true;
-
-    return false;
-}
-
-static const String errMsgs[EErrorTypeEnd + 1];
-
-const String *getErrMsg(const EErrorType err)
-{
-    return &errMsgs[err];
-}
-
-#define ERROR_MSG_OUTPUT_FMT "%s:%zu:%zu: error: %s"
-void eh_printErrs(const SErrHandler *const eh,
-                  const String *const outFilepath,
-                  const String *const srcFilepath)
-{
-    ASSERT(eh, NULL_POINTER_ERROR_MSG_FORMAT, "SErrHandler");
-    ASSERT(srcFilepath, "NULL pointer to the source filepath String was passed.");
-    ASSERT_DBG(outFilepath != NULL, "NULL pointer to the output filepath String was passed.");
-    FILE *outFile = NULL;
-    if (outFilepath != NULL)
-        outFile = fopen((const char *)outFilepath->bytes, "w");
+    const SDiagnosticInfo diagnosticInfo{ .diagnostic = diagnostic, .tokenInfo = tokenInfo };
+    if (eDiagnostic_isError())
+        vecSDiagnosticInfo_push(diagnosticHandler->errors, &diagnosticInfo);
+    else if (eDiagnostic_isWarning())
+        vecSDiagnosticInfo_push(diagnosticHandler->warnings, &diagnosticInfo);
     else
-        outFile = stdout;
-
-    for (U64 i = 0; i < eh->errs->len; i++) {
-        SError *err = vecSError_get(eh->errs, i);
-        const String *msg = getErrMsg(err->type);
-        fprintf(outFile,
-                ERROR_MSG_OUTPUT_FMT,
-                (const char *)srcFilepath->bytes,
-                err->tok.base.ln,
-                err->tok.base.col,
-                (const char *)msg->bytes);
-        fprintf(outFile, "\n");
-    }
-
-    fflush(outFile);
+        ASSERT_DBG(false, "You shouldn't have conditionally branched into here!");
 }
 
-static const String errMsgs[EErrorTypeEnd + 1]
-    = { [EErrorTypeBeg] = { .len = 0, .bytes = (U8 *)"" },
-        [EERROR_TYPE_INVALID_IDENT] = { .len = 22, .bytes = (U8 *)"Invalid identifier %s." },
-        [EErrorTypeEnd] = { .len = 0, .bytes = (U8 *)"" } };
-
-// =====================================================================
-// ============================== SError ===============================
-// =====================================================================
-SError *new_error(const EErrorType type, const UToken *const tok, const EErrorLevel lvl)
+void diagnosticHandler_print(const SDiagnosticHandler *const diagnosticHandler)
 {
-    SError *err = (SError *)malloc(sizeof(SError));
-    ASSERT(err != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "UError obj");
-    *((UToken *)&(err->tok)) = *tok;
-    *((EErrorType *)&(err->type)) = type;
-    *((EErrorLevel *)&(err->lvl)) = lvl;
-
-    return err;
-}
-
-void initError(SError *const err,
-               const EErrorType type,
-               const UToken *const tok,
-               const EErrorLevel lvl)
-{
-    ASSERT(err, NULL_POINTER_ERROR_MSG_FORMAT, "UError");
-    ASSERT(tok, NULL_POINTER_ERROR_MSG_FORMAT, "UToken");
-    switch (tok->base.type) {
-    case ETOKEN_IDENT:
-        = new_sTokIdent(tok->base.col, tok->base.ln, tok->base.type, tok->ident.lexeme);
-        break;
-
-    case ETOKEN_FLOAT_LIT:
-    case ETOKEN_INT_LIT:
-    }
-    *((EErrorType *)&(err->type)) = type;
-    *((EErrorLevel *)&(err->lvl)) = lvl;
-}
-
-void del_error(SError *err)
-{
-    free(err);
-}
-
-// =====================================================================
-// ============================ Vec<SError> ============================
-// =====================================================================
-Vec *new_vecSError(const U64 len, const U64 cap)
-{
-    return new_vec(len, cap, sizeof(SError));
-}
-
-void vecSError_insert(Vec *const vt, const U64 idx, const SError *const err)
-{
-    vec_insert(vt, idx, (const U8 *const)err, sizeof(SError));
-}
-
-void vecSError_push(Vec *const vt, const SError *const err)
-{
-    vec_push(vt, sizeof(SError), (const U8 *const)err);
-}
-
-SError *vecSError_pop(Vec *const vt)
-{
-    return (SError *)vec_pop(vt);
-}
-
-SError *vecSError_get(Vec *const vt, const U64 idx)
-{
-    return (SError *)vec_get(vt, idx);
+    ASSERT(diagnosticHandler, NULL_POINTER_ERROR_MSG_FORMAT, "SDiagnosticHandler");
+    ASSERT_DBG(false, "FIXME: Implement diagnostics printer!");
 }

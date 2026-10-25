@@ -8,8 +8,9 @@ add_library(c_frontend
 )
 target_link_libraries(c_frontend
     PUBLIC
-    volt_c_base
     compiler_warnings
+    volt_config
+    volt_cutil
 )
 
 # TEST

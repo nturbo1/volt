@@ -1,7 +1,8 @@
 #ifndef FRONTEND_C_TOKEN_H
 #define FRONTEND_C_TOKEN_H
 
-#include "base_inc.h"
+#include "config.h"
+#include "vlt_string.h"
 
 typedef enum EToken {
     eTokenBeg,

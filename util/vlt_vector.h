@@ -47,9 +47,13 @@ U8 *vec_pop(Vec *const vt);
 U8 *vec_get(Vec *const vt, const U64 idx);
 
 #define GEN_VECTOR_OF(T)                                                                           \
-    inline Vec *new_vec##T(const U64 len, const U64 cap)                                           \
+    inline Vec *new_vec##T(const U64 len,                                                          \
+                           const U64 cap,                                                          \
+                           FMemAlloc *const fAllocMem,                                             \
+                           FMemDealloc *const fDeallocMem,                                         \
+                           FComparator *const fCompare)                                            \
     {                                                                                              \
-        return new_vec(len, cap, sizeof(T));                                                       \
+        return new_vec(len, cap, sizeof(T), fAllocMem, fDeallocMem, fCompare);                     \
     }                                                                                              \
     inline void vec##T_insert(Vec *const vt, const U64 idx, const T *const elem)                   \
     {                                                                                              \

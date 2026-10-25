@@ -7,7 +7,7 @@ add_executable(vcc cc.c)
 add_subdirectory(vctest)
 add_subdirectory(config)
 add_subdirectory(util)
-# add_subdirectory(frontend)
+add_subdirectory(frontend)
 
 target_link_libraries(vcc
     PRIVATE
