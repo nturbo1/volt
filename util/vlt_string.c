@@ -1,6 +1,6 @@
 #include "vlt_string.h"
-#include "vlt_assert.h"
-#include "vlt_bytes.h"
+#include "core/vlt_assert.h"
+#include "core/vlt_bytes.h"
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -36,9 +36,11 @@ String *new_string(const U8 *const bytes,
     return newStr;
 }
 
-String *new_stringFromLit(const char *bytes)
+inline String *new_stringFromLit(const char *bytes,
+                                 FMemAlloc *const fAllocMem,
+                                 FMemDealloc *const fDeallocMem)
 {
-    return new_string((const U8 *const)bytes, strlen(bytes), NULL, NULL);
+    return new_string((const U8 *const)bytes, strlen(bytes), fAllocMem, fDeallocMem);
 }
 
 String *stringCopy(const String *const source, const U64 startIdx, const U64 endIdx)
@@ -52,7 +54,10 @@ String *stringCopy(const String *const source, const U64 startIdx, const U64 end
     if (source == NULL)
         return NULL;
 
-    return new_string(source->bytes + startIdx, endIdx - startIdx, NULL, NULL);
+    return new_string(source->bytes + startIdx,
+                      endIdx - startIdx,
+                      source->fAllocMem,
+                      source->fDeallocMem);
 }
 
 void del_string(String *str)

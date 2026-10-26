@@ -2,6 +2,8 @@
 #define VLT_STRING_H
 
 #include "config.h"
+#include "core/vlt_assert.h"
+#include "core/vlt_hash.h"
 #include "core/vlt_memory.h"
 
 // Represents an immutable string object
@@ -24,7 +26,9 @@ String *new_string(const U8 *const bytes,
                    FMemDealloc *const fDeallocMem);
 
 // Creates a new String object from a string literal.
-String *new_stringFromLit(const char *bytes);
+String *new_stringFromLit(const char *bytes,
+                          FMemAlloc *const fAllocMem,
+                          FMemDealloc *const fDeallocMem);
 
 // Creates a new `String` obj that contains the bytes from a `source`
 // `String` that starts at `startIdx` and ends (not including) at
@@ -43,5 +47,18 @@ Bool stringEqual(String *s1, String *s2);
 
 // Returns a character at a given index in a given String
 U8 stringCharAt(String *s, U64 idx);
+
+inline void string_memDealloc(String *s)
+{
+    if (s)
+        del_string(s);
+}
+
+inline U64 string_hash(const U8 *const str, const U64 size)
+{
+    ASSERT_DBG(size == sizeof(String), "String obj bytes size doesn't match the String type size.");
+    String *s = (String *)str;
+    return hash_FNV_1a(s->bytes, s->len);
+}
 
 #endif // VLT_STRING_H
