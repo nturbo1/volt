@@ -1,5 +1,3 @@
-BasedOnStyle: LLVM
-
 # Indentation
 IndentWidth: 4
 ContinuationIndentWidth: 4
@@ -45,6 +43,7 @@ BraceWrapping:
 
 # Function declarations and calls
 AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
 BinPackArguments: false
 BinPackParameters: false
 BreakBeforeBinaryOperators: All
