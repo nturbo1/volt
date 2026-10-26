@@ -2,6 +2,7 @@
 #define BASE_VLT_HASHMAP_H
 
 #include "config.h"
+#include "vlt_assert.h"
 #include "vlt_container.h"
 #include "vlt_memory.h"
 
@@ -42,16 +43,24 @@ void hashmap_put(HashMap *const hm,
 MapElem *hashmap_get(const HashMap *const hm, const U8 *const key, const U64 keySize);
 void hashmap_del(HashMap *const hm, const U8 *const key, const U64 keySize);
 
-#define GEN_HMAP_OF(K, V)                                                                          \
-    inline void hmap##K##V_put(HashMap *const hm, const K *const key, const V *const val)          \
+#define GEN_HASHMAP_OF(K, V)                                                                       \
+    inline void hashmap##K##V_put(HashMap *const hm, const K *const key, const V *const val)       \
     {                                                                                              \
-        hashmap_put(hm, (const U8 *const)key, sizeof(K), (const U8 *const)val, sizeof(val));       \
+        hashmap_put(hm, (const U8 *const)key, sizeof(K), (const U8 *const)val, sizeof(V));         \
     }                                                                                              \
-    inline MapElem *hmap##K##V_get(const HashMap *const hm, const K *const key)                    \
+    inline const V *hashmap##K##V_get(const HashMap *const hm, const K *const key)                 \
     {                                                                                              \
-        return hashmap_get(hm, (const U8 *const)key, sizeof(key));                                 \
+        MapElem *elem = hashmap_get(hm, (const U8 *const)key, sizeof(K));                          \
+        if (elem) {                                                                                \
+            ASSERT_DBG(elem->key, "Existing map element key must not be null.");                   \
+            ASSERT_DBG(elem->keySize == sizeof(K),                                                 \
+                       "Map element key size doesn't match the key type size.");                   \
+            ASSERT_DBG(elem->valSize == sizeof(V),                                                 \
+                       "Map element value size doesn't match the value type size.");               \
+            return elem->val;                                                                      \
+        }                                                                                          \
     }                                                                                              \
-    inline void hmap##K##V_del(HashMap *const hm, const K *const key)                              \
+    inline void hashmap##K##V_del(HashMap *const hm, const K *const key)                           \
     {                                                                                              \
         hashmap_del(hm, (const U8 *const)key, sizeof(K));                                          \
     }

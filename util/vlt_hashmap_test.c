@@ -2,8 +2,6 @@
 #include "vlt_bytes.h"
 #include "vlt_hashmap.h"
 
-#include <stdbool.h>
-
 typedef struct HashMapTestInput {
     const U8 *key;
     const U64 keySize;
