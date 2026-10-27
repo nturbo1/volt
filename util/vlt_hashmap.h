@@ -57,7 +57,7 @@ void hashmap_del(HashMap *const hm, const U8 *const key, const U64 keySize);
                        "Map element key size doesn't match the key type size.");                   \
             ASSERT_DBG(elem->valSize == sizeof(V),                                                 \
                        "Map element value size doesn't match the value type size.");               \
-            return elem->val;                                                                      \
+            return (EToken *)elem->val;                                                            \
         }                                                                                          \
     }                                                                                              \
     inline void hashmap##K##V_del(HashMap *const hm, const K *const key)                           \

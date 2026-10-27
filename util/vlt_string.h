@@ -9,7 +9,7 @@
 // Represents an immutable string object
 typedef struct {
     const U8 *bytes; // NULL-terminated
-    U64 len; // doesn't count the NULL-terminator
+    const U64 len; // doesn't count the NULL-terminator
     FMemAlloc *const fAllocMem;
     FMemDealloc *const fDeallocMem;
 } String;
@@ -35,7 +35,7 @@ String *new_stringFromLit(const char *bytes,
 // `endIdx`.
 //
 // If `source` is NULL, then returns NULL.
-String *stringCopy(const String *const source, const U64 startIdx, const U64 endIdx);
+String *string_copy(const String *const source, const U64 startIdx, const U64 endIdx);
 
 // Deletes a given String object.
 // It's the programmer's responsibility to set the string parameter

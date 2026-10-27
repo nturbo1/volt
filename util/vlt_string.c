@@ -29,7 +29,7 @@ String *new_string(const U8 *const bytes,
     *((U8 *)&(newStrBytes[newStrLen])) = 0; // append a NULL-terminator
     newStr->bytes = newStrBytes;
     newStrBytes = NULL;
-    newStr->len = newStrLen;
+    *(U64 *)&(newStr->len) = newStrLen;
     *(FMemAlloc **)&(newStr->fAllocMem) = fAllocM;
     *(FMemDealloc **)&(newStr->fDeallocMem) = fDeallocM;
 
@@ -43,7 +43,7 @@ inline String *new_stringFromLit(const char *bytes,
     return new_string((const U8 *const)bytes, strlen(bytes), fAllocMem, fDeallocMem);
 }
 
-String *stringCopy(const String *const source, const U64 startIdx, const U64 endIdx)
+String *string_copy(const String *const source, const U64 startIdx, const U64 endIdx)
 {
     ASSERT(((source == NULL || source->len == 0) && startIdx == 0)
                || (source != NULL && source->len > 0),
@@ -68,7 +68,7 @@ void del_string(String *str)
     FMemDealloc *const fDeallocMem = str->fDeallocMem;
     fDeallocMem((U8 *)str->bytes);
     str->bytes = NULL;
-    str->len = 0;
+    *(U64 *)&(str->len) = 0;
     fDeallocMem(str);
 }
 

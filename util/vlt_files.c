@@ -15,5 +15,5 @@ String *dirName(const String *const filepath)
             break;
     }
 
-    return stringCopy(filepath, 0, parDirLastIdx + 1);
+    return string_copy(filepath, 0, parDirLastIdx + 1);
 }
