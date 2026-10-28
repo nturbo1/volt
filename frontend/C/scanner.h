@@ -4,37 +4,29 @@
 #include "config.h"
 #include "diagnostics.h"
 #include "token.h"
+#include "vlt_hashmap.h"
 
-typedef struct ScanSrc SScanSrc;
-typedef struct SScanner {
-    SScanSrc *src;
-    String *filepath; // src filepath
-    U64 lnOffs; // line offset in the src file
-    U64 colOffs; // column offset in the src file
-    UToken tok;
-    EErrorType err; // error happened in the last scan
-} SScanner;
+typedef struct CharSrc SCharSrc;
+SCharSrc *new_charSrc(const String *const filepath);
+void del_charSrc(SCharSrc *src);
+// Returns the next character/byte in a byte stream and advances the character/byte position in
+// the byte stream.
+U8 charSrc_next(SCharSrc *const src);
+// Returns the next character/byte in a byte stream and does NOT advance the character/byte
+// position in the byte stream.
+U8 charSrc_peek(SCharSrc *const src);
+// Returns a copy of the src filepath string.
+String *charSrc_getFilepath(const SCharSrc *const src);
 
-// Creates a new scanner.
-//
-// Copies the `filepath`, doesn't take ownership of it!
-SScanner *new_scanner(const String *const filepath);
-void del_scanner(SScanner *s);
-EToken scannerPopNextToken(SScanner *s);
-EToken scannerPeekNextToken(SScanner *s);
-U8 nextChar(SScanner *s);
-U8 peekChar(SScanner *s);
-
-#define SCANNER_BUFFER_SIZE 8192
-struct ScanSrc {
-    FILE *file; // src file
-    // Contains 2 buffers:  Buffer 0              Buffer 1
-    //                     [ | | | ... | | | |   | |   | ... | | |    ]
-    //                      0 1 2 ........... n-1 n n+1 ......... 2n-1
-    U64 bufEnd; // end of the current buffer being processed
-    U64 next; // the next character index in the src buffer
-    U8 buf[2 * SCANNER_BUFFER_SIZE]; // the src buffer
-};
+typedef struct Scanner SScanner;
+SScanner *scanner_new(const String *const filepath);
+SScanner *scanner_newSrc(SCharSrc *const src);
+// Returns the next token info from a token stream and advances the token position in the token
+// stream.
+EDiagnostic scanner_next(SScanner *const s, STokenInfo *const tokenInfo);
+// Returns the next token info from a token stream and does NOT advance the token position in the
+// token stream.
+const STokenInfo *scanner_peek(SScanner *const s);
 
 ///////////////////////////////////////////////////////////////////////////////////
 // HashMap<String, EToken>

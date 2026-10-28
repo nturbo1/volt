@@ -39,5 +39,6 @@ typedef bool Bool;
 #define NULL_POINTER_ERROR_MSG_FORMAT "NULL %s pointer was passed!"
 #define FAILED_TO_ALLOC_MEM_FOR_FORMAT "Failed to allocate memory for %s."
 #define S_ENUM_VALUE_D_IS_OUT_OF_RANGE_FORMAT "%s enum value %d is out of range!"
+#define FAILED_CREATE_NEW_S_OBJ_FORMAT "Failed to create new %s obj."
 
 #endif // BASE_H

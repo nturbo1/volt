@@ -14,6 +14,8 @@ typedef enum EDiagnostic {
     EDiagnosticWarningBeg,
     EDiagnosticWarningEnd,
     EDiagnosticErrorBeg,
+    EDIAGNOSTIC_INVALID_IDENT,
+    EDIAGNOSTIC_INVALID_OCTAL_LIT,
     EDiagnosticErrorEnd,
     EDiagnosticFatalBeg,
     EDiagnosticFatalEnd,

@@ -5,7 +5,7 @@
 #include "vlt_memory.h"
 #include "vlt_string.h"
 
-typedef struct SStringBuilder {
+typedef struct StringBuilder {
     U8 *buf;
     U64 bufCap;
     U64 len;

@@ -16,7 +16,7 @@ void diagnosticHandler_init(SDiagnosticHandler *const diagnosticHandler,
     *(I64 *)&(diagnosticHandler->maxErrCount)
         = maxErrCount > 0 ? maxErrCount : DEFAULT_MAX_ERROR_C0UNT;
     if (diagnosticHandler->errors) {
-        del_vec(diagnosticHandler);
+        del_vec(diagnosticHandler->errors);
         *(Vec **)&(diagnosticHandler->errors) = NULL;
     }
     *(Vec **)&(diagnosticHandler->errors) = new_vecSDiagnosticInfo(0, 0, NULL, NULL, NULL);
@@ -39,16 +39,23 @@ Bool diagnosticHandler_handle(SDiagnosticHandler *const diagnosticHandler,
                "EDiagnostic",
                diagnostic);
 
-    if (eDiagnostic_isFatal() || diagnosticHandler_errCountMaxLimReached(diagnosticHandler))
+    if (eDiagnostic_isFatal(diagnostic)
+        || diagnosticHandler_errCountMaxLimReached(diagnosticHandler)) {
         return false;
+    }
 
-    const SDiagnosticInfo diagnosticInfo{ .diagnostic = diagnostic, .tokenInfo = tokenInfo };
-    if (eDiagnostic_isError())
+    STokenInfo tokInfo;
+    tokenInfo_init(&tokInfo, tokenInfo->col, tokenInfo->ln, tokenInfo->tok, tokenInfo->lexeme);
+    const SDiagnosticInfo diagnosticInfo = { .diagnostic = diagnostic, .tokenInfo = tokInfo };
+
+    if (eDiagnostic_isError(diagnostic))
         vecSDiagnosticInfo_push(diagnosticHandler->errors, &diagnosticInfo);
-    else if (eDiagnostic_isWarning())
+    else if (eDiagnostic_isWarning(diagnostic))
         vecSDiagnosticInfo_push(diagnosticHandler->warnings, &diagnosticInfo);
     else
         ASSERT_DBG(false, "You shouldn't have conditionally branched into here!");
+
+    return true;
 }
 
 void diagnosticHandler_print(const SDiagnosticHandler *const diagnosticHandler)

@@ -48,10 +48,23 @@ Bool stringEqual(String *s1, String *s2);
 // Returns a character at a given index in a given String
 U8 stringCharAt(String *s, U64 idx);
 
-inline void string_memDealloc(String *s)
+inline U64 string_len(const String *const s)
 {
-    if (s)
-        del_string(s);
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "String");
+    return s->len;
+}
+
+inline Bool string_isEmpty(const String *const s)
+{
+    return string_len(s) > 0;
+}
+
+// Used by containers/collections that store elements or keys of type String.
+inline void string_memDealloc(void *s)
+{
+    String *str = (String *)s;
+    if (str)
+        del_string(str);
 }
 
 inline U64 string_hash(const U8 *const str, const U64 size)

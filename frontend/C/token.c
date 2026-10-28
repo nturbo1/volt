@@ -1,5 +1,5 @@
 #include "token.h"
-#include <base_inc.h>
+#include "config.h"
 
 #include <stdlib.h>
 
@@ -8,9 +8,9 @@ Bool eTokenIsKeyword(const EToken tok)
     return eTokenKeywordBeg < tok && tok < eTokenKeywordEnd;
 }
 
-Bool eTokenIsStorageClass(const SToken *const tok)
+Bool eTokenIsStorageClass(const EToken tok)
 {
-    switch (tok->type) {
+    switch (tok) {
     case ETOKEN_STATIC:
     case ETOKEN_EXTERN:
     case ETOKEN_TYPEDEF:
@@ -23,12 +23,13 @@ Bool eTokenIsStorageClass(const SToken *const tok)
     }
 }
 
-Bool eTokenIsTypeSpecifier(const SToken *const tok)
+Bool eTokenIsTypeSpecifier(const EToken tok)
 {
-    ASSERT_DBG(
-        eTokenBeg < tok && tok < eTokenEnd, "Out of range EToken value was passed: %d.", tok);
+    ASSERT_DBG(eTokenBeg < tok && tok < eTokenEnd,
+               "Out of range EToken value was passed: %d.",
+               tok);
 
-    switch (tok->type) {
+    switch (tok) {
     case ETOKEN_STRUCT:
     case ETOKEN_UNION:
     case ETOKEN_ENUM:
@@ -50,9 +51,9 @@ Bool eTokenIsTypeSpecifier(const SToken *const tok)
     }
 }
 
-Bool eTokenIsTypeQualifier(const SToken *const tok)
+Bool eTokenIsTypeQualifier(const EToken tok)
 {
-    switch (tok->type) {
+    switch (tok) {
     case ETOKEN_CONST:
     case ETOKEN_RESTRICT:
     case ETOKEN_VOLATILE:
@@ -63,7 +64,7 @@ Bool eTokenIsTypeQualifier(const SToken *const tok)
     }
 }
 
-Bool eTokenIsFuncSpecifier(const SToken *const tok)
+Bool eTokenIsFuncSpecifier(const EToken tok)
 {
     return tok == ETOKEN_INLINE;
 }
@@ -178,27 +179,4 @@ const char *eTokenToCStr(EToken tok)
 {
     ASSERT(eTokenBeg <= tok && tok <= eTokenEnd, "tok enum value is out of range.");
     return eTokenNames[tok];
-}
-
-STokenInfo *new_sTokenInfo(const U64 col,
-                           const U64 ln,
-                           const EToken tok,
-                           const String *const lexeme)
-{
-    STokenInfo *tokInfo = malloc(sizeof(STokenInfo));
-    ASSERT(tokInfo, NULL_POINTER_ERROR_MSG_FORMAT, "STokenInfo");
-    *((U64 *)&(tokInfo->col)) = col;
-    *((U64 *)&(tokInfo->ln)) = ln;
-    *((EToken *)&(tokInfo->tok)) = tok;
-    *((String **)&(tokInfo->lexeme)) = lexeme;
-
-    return tokInfo;
-}
-
-void del_sTokenInfo(STokenInfo *tokInfo)
-{
-    if (tokInfo) {
-        del_string(tokInfo->lexeme);
-        free(tokInfo);
-    }
 }

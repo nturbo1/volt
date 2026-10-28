@@ -55,19 +55,19 @@ U8 *vec_get(Vec *const vt, const U64 idx);
     {                                                                                              \
         return new_vec(len, cap, sizeof(T), fAllocMem, fDeallocMem, fCompare);                     \
     }                                                                                              \
-    inline void vec##T_insert(Vec *const vt, const U64 idx, const T *const elem)                   \
+    inline void vec##T##_insert(Vec *const vt, const U64 idx, const T *const elem)                 \
     {                                                                                              \
         vec_insert(vt, idx, (const U8 *const)elem, sizeof(T));                                     \
     }                                                                                              \
-    inline void vec##T_push(Vec *const vt, const T *const elem)                                    \
+    inline void vec##T##_push(Vec *const vt, const T *const elem)                                  \
     {                                                                                              \
         vec_push(vt, sizeof(T), (const U8 *const)elem);                                            \
     }                                                                                              \
-    inline T *vec##T_pop(Vec *const vt)                                                            \
+    inline T *vec##T##_pop(Vec *const vt)                                                          \
     {                                                                                              \
         return (T *)vec_pop(vt);                                                                   \
     }                                                                                              \
-    inline T *vec##T_get(Vec *const vt, const U64 idx)                                             \
+    inline T *vec##T##_get(Vec *const vt, const U64 idx)                                           \
     {                                                                                              \
         return (T *)vec_get(vt, idx);                                                              \
     }

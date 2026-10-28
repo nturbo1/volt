@@ -1,566 +1,162 @@
 #include "scanner.h"
-#include "base_inc.h"
+#include "config.h"
 #include "token.h"
+#include "vlt_hashmap.h"
+#include "vlt_memory.h"
+#include "vlt_string.h"
+#include "vlt_stringBuilder.h"
 
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// HashMap<String*, EToken>
-static void initKeywordsMap();
-static HashMap *keywords = NULL;
-
-///////////////////////////////////////////////////////////////////////////////////
 // HashMap<String, EToken>
-///////////////////////////////////////////////////////////////////////////////////
-GEN_HMAP_OF(String, EToken)
+GEN_HASHMAP_OF(String, EToken)
+static HashMap *keywords = NULL;
+static Bool initKeywordsMap();
 
-static void hmapStringEToken_put(HashMap *const hm, const String *const key, const EToken val)
+// ===============================================================================
+// ================================== SCharSrc ===================================
+// ===============================================================================
+#define CHAR_SRC_BUFFER_SIZE 8192
+struct CharSrc {
+    FILE *file; // src file
+    const String *const filepath; // src filepath
+    // Contains 2 buffers:  Buffer 0              Buffer 1
+    //                     [ | | | ... | | | |   | |   | ... | | |    ]
+    //                      0 1 2 ........... n-1 n n+1 ......... 2n-1
+    U64 bufEnd; // end of the current buffer being processed
+    U64 next; // the next character index in the src buffer
+    U8 buf[2 * CHAR_SRC_BUFFER_SIZE]; // the src buffer
+};
+
+// Fills the current buffer that the scanner is currently processing
+// with the next chunk of bytes from the src file.
+static void charSrc_fillBuf(SCharSrc *src)
 {
-    ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
-    ASSERT(key->len > 0, "Empty string can't be a hashmap key.");
-    hashmap_put(hm, key->bytes, key->len + 1, (U8 *)&val, sizeof(EToken));
+    ASSERT(src != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SCharSrc");
+    U8 *buf = src->buf + src->next;
+    fflush(stdout);
+    U64 n = (U64)fread(buf, sizeof(U8), CHAR_SRC_BUFFER_SIZE, src->file);
+
+    if (feof(src->file)) {
+        buf[n] = EOF;
+    }
 }
 
-static EToken hmapStringEToken_get(HashMap *const hm, const String *const key)
+SCharSrc *new_charSrc(const String *const filepath)
 {
-    ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "String");
-    ASSERT(key->len > 0, "Empty string can't be a hashmap key.");
-    MapElem *elem = hashmap_get(hm, key->bytes, key->len + 1);
-    if (elem != NULL) {
-        ASSERT_DBG(elem->valSize == sizeof(EToken),
-                   "HashMap element value size doesn't match EToken size.");
-        return *(EToken *)(elem->val);
+    ASSERT(!string_isEmpty(filepath), "Filepath can't be empty!");
+    FILE *srcFile = fopen((const char *)filepath->bytes, "r");
+    ASSERT(srcFile != NULL, "Failed to open file %s\n", (const char *)filepath->bytes);
+    SCharSrc *src = (SCharSrc *)malloc(sizeof(SCharSrc));
+    ASSERT(src != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SCharSrc");
+    src->file = srcFile;
+    srcFile = NULL;
+    src->bufEnd = CHAR_SRC_BUFFER_SIZE;
+    src->next = 0;
+    charSrc_fillBuf(src);
+
+    return src;
+}
+
+void del_charSrc(SCharSrc *src)
+{
+    if (src) {
+        if (src->file)
+            fclose(src->file);
+        src->file = NULL;
+        del_string((String *)(src->filepath));
+        free(src);
+    }
+}
+
+U8 charSrc_next(SCharSrc *const src)
+{
+    ASSERT(src != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SCharSrc");
+    const U8 ch = src->buf[src->next];
+
+    if ((char)ch != EOF) {
+        src->next = ((src->next + 1) % (2 * CHAR_SRC_BUFFER_SIZE));
+
+        // if next is the beginning of one of the buffers
+        if (src->next % CHAR_SRC_BUFFER_SIZE == 0) {
+            charSrc_fillBuf(src);
+            src->bufEnd = ((src->next + CHAR_SRC_BUFFER_SIZE) % (2 * CHAR_SRC_BUFFER_SIZE));
+        }
     }
 
-    return eTokenEnd;
+    return ch;
 }
 
-static void printHashMapStringKey(FILE *const out, const U8 *const key)
+U8 charSrc_peek(SCharSrc *const src)
 {
-    ASSERT(out != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "FILE");
-    ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "U8");
-    fprintf(out, "\"%s\"", key);
+    ASSERT(src != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SCharSrc");
+    return src->buf[src->next];
 }
 
-static void printHashMapETokenVal(FILE *const out, const U8 *const val)
+String *charSrc_getFilepath(const SCharSrc *const src)
 {
-    ASSERT(out != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "FILE");
-    ASSERT(val != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "U8");
-
-    EToken tok = *((EToken *)val);
-    fprintf(out, "%s", eTokenToCStr(tok));
+    ASSERT(src, NULL_POINTER_ERROR_MSG_FORMAT, "SCharSrc");
+    return string_copy(src->filepath, 0, src->filepath->len);
 }
-
-// ===============================================================================
-// ================================== SScanSrc ===================================
-// ===============================================================================
-static SScanSrc *initScanSrc(const String *const filepath);
-static void delScanSrc(SScanSrc *src);
-static void fillScanSrcBuf(SScanSrc *src);
-static U8 next(SScanSrc *src);
-static U8 peek(SScanSrc *src);
 
 // ===============================================================================
 // ================================== SScanner ===================================
 // ===============================================================================
-static inline void setTokBase(UToken *tok, const U64 col, const U64 ln, EToken type);
-static void setTokNumber(UToken *tok, const U64 col, const U64 ln, EToken type, const U64 val);
-static inline void setTokIdent(UToken *tok,
-                               const U64 col,
-                               const U64 ln,
-                               EToken type,
-                               String *lexeme);
+struct Scanner {
+    SCharSrc *const src;
+    U64 lnOffs; // line offset in the src file
+    U64 colOffs; // column offset in the src file
+    STokenInfo tokInfo; // the latest scanned token info
+    EDiagnostic diagnostic; // lexical diagnostic about the latest scanned token
+};
 
-static EToken scanIdentifier(SScanner *s);
-// static EToken scanInt(SScanner* s);
-static EToken scanNumber(SScanner *s);
-static EToken scanOctal(SScanner *s);
-static EToken scanHex(SScanner *s);
-static EToken scanDecimal(SScanner *s);
-static EToken scanFloat(SScanner *s);
-static EToken scanComment(SScanner *s, const Bool multiLine);
-
-static Bool isWhitespace(const U8 ch);
-static Bool isAlpha(const U8 ch);
-static Bool isAlnum(const U8 ch);
-static Bool isDecDigit(const U8 ch);
-static Bool isOctDigit(const U8 ch);
-static void skipWhitespace(SScanner *s);
-
-typedef enum ENumBase {
-    eNumBaseBeg,
-    ENUMBASE_10,
-    ENUMBASE_8,
-    ENUMBASE_16,
-    ENUMBASE_2,
-    eNumBaseEnd
-} ENumBase;
-
-// Converts a given digit character in a given number base
-// to its integral value.
-// For instance:
-//     decimal:     '9' -> 9, '0' -> 0, '3' -> 3, ...
-//     hexadecimal: '2' -> 2, '0' -> 0, 'a' -> 10, 'F' -> 15, ...
-//     octal:       '4' -> 4, '7' -> 7, '0' -> 0, ...
-//     binary:      '0' -> 0, '1' -> 1
-inline static U64 digitFromCharToInt(const U8 digitChar, const ENumBase base, EErrorType *const err)
+static inline void scanner_resetTokInfo(SScanner *const s)
 {
-    *err = EERROR_TYPE_NO_ERROR;
-    ASSERT(eNumBaseBeg < base && base < eNumBaseEnd, "Number base enum value is out of range.");
-
-    switch (base) {
-    case ENUMBASE_10:
-        switch (digitChar) {
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9':
-            return digitChar - '0';
-
-        default:
-            *err = EERROR_TYPE_INVALID_DECIMAL_LIT;
-            return 0;
-        }
-
-    case ENUMBASE_8:
-        switch (digitChar) {
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-            return digitChar - '0';
-
-        default:
-            *err = EERROR_TYPE_INVALID_OCTAL_LIT;
-            return 0;
-        }
-
-    case ENUMBASE_16:
-        switch (digitChar) {
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9':
-            return digitChar - '0';
-
-        case 'A':
-        case 'B':
-        case 'C':
-        case 'D':
-        case 'E':
-        case 'F':
-            return (digitChar - 'A') + 10;
-
-        case 'a':
-        case 'b':
-        case 'c':
-        case 'd':
-        case 'e':
-        case 'f':
-            return (digitChar - 'a') + 10;
-
-        default:
-            *err = EERROR_TYPE_INVALID_HEX_LIT;
-            return 0;
-        }
-
-    case ENUMBASE_2:
-        switch (digitChar) {
-        case '0':
-        case '1':
-            return digitChar - '0';
-
-        default:
-            *err = EERROR_TYPE_INVALID_BINARY_LIT;
-            return 0;
-        }
-
-    default:
-        ASSERT(false,
-               "This is ridiculous, bro! You should've checked the"
-               " number base enum value to be in the range! You did fuck up!");
-    }
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    s->tokInfo.ln = s->lnOffs + 1;
+    s->tokInfo.col = s->colOffs + 1;
+    s->tokInfo.tok = ETOKEN_EOF;
+    del_string(s->tokInfo.lexeme);
+    s->tokInfo.lexeme = NULL;
+}
+static inline void scanner_resetDiagnostic(SScanner *const s)
+{
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    s->diagnostic = EDiagnosticEnd;
+}
+inline void scanner_setTokCol(SScanner *const s, const U64 col)
+{
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    s->tokInfo.col = col;
+}
+inline void scanner_setTokLn(SScanner *const s, const U64 ln)
+{
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    s->tokInfo.ln = ln;
+}
+inline void scanner_setTok(SScanner *const s, const EToken tok)
+{
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    s->tokInfo.tok = tok;
+}
+inline void scanner_setTokLexeme(SScanner *const s, String *const lexeme)
+{
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    s->tokInfo.lexeme = lexeme;
+}
+inline void scanner_setDiagnostic(SScanner *const s, const EDiagnostic diagnostic)
+{
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    s->diagnostic = diagnostic;
 }
 
-SScanner *new_scanner(const String *const filepath)
+static U8 nextChar(SScanner *s)
 {
-    SScanSrc *src = initScanSrc(filepath);
-    SScanner *s = (SScanner *)malloc(sizeof(SScanner));
-    ASSERT(s != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SScanner");
-    s->src = src;
-    src = NULL;
-    s->filepath = new_string(filepath->bytes, filepath->len);
-    s->lnOffs = s->colOffs = 0;
-    setTokBase(&(s->tok), 0, 0, ETOKEN_NO_VALUE);
-    s->err = EERROR_TYPE_NO_ERROR;
-
-    initKeywordsMap();
-
-    return s;
-}
-
-EToken nextTok(SScanner *s)
-{
-    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    s->err = EERROR_TYPE_NO_ERROR;
-    skipWhitespace(s);
-    const U64 tokCol = s->colOffs + 1;
-    const U64 tokLn = s->lnOffs + 1;
-    U8 ch = peekChar(s);
-    if ((char)ch == EOF) {
-        setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_EOF);
-        return ETOKEN_EOF;
-    }
-
-    if (isDecDigit(ch)) {
-        return scanNumber(s);
-    } else {
-        switch (ch) {
-        case '(':
-            nextChar(s);
-            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_LPAREN);
-            return ETOKEN_LPAREN;
-
-        case '[':
-            nextChar(s);
-            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_LBRACK);
-            return ETOKEN_LBRACK;
-
-        case '{':
-            nextChar(s);
-            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_LBRACE);
-            return ETOKEN_LBRACE;
-
-        case ')':
-            nextChar(s);
-            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_RPAREN);
-            return ETOKEN_RPAREN;
-
-        case ']':
-            nextChar(s);
-            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_RBRACK);
-            return ETOKEN_RBRACK;
-
-        case '}':
-            nextChar(s);
-            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_RBRACE);
-            return ETOKEN_RBRACE;
-
-        case ',':
-            nextChar(s);
-            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_COMMA);
-            return ETOKEN_COMMA;
-
-        case '.': {
-            nextChar(s);
-            ch = peekChar(s);
-            if (ch == '.') {
-                nextChar(s);
-                ch = peekChar(s);
-                if (ch == '.') {
-                    nextChar(s);
-                    setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_ELLIPSIS);
-                    return ETOKEN_ELLIPSIS;
-                } else {
-                    setTokIdent(&(s->tok), tokCol, tokLn, ETOKEN_INVALID, new_stringFromLit(".."));
-                    s->err = EERROR_TYPE_INVALID_IDENT;
-                    return ETOKEN_INVALID;
-                }
-            }
-            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_PERIOD);
-            return ETOKEN_PERIOD;
-        }
-
-        case ':':
-            nextChar(s);
-            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_COLON);
-            return ETOKEN_COLON;
-
-        case ';':
-            nextChar(s);
-            setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_SEMICOLON);
-            return ETOKEN_SEMICOLON;
-
-        case '*':
-            nextChar(s);
-            ch = peekChar(s);
-            switch (ch) {
-            case '=':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_MUL_ASSIGN);
-                return ETOKEN_MUL_ASSIGN;
-
-            default:
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_ASTERISK);
-                return ETOKEN_ASTERISK;
-            }
-
-        case '/':
-            nextChar(s);
-            ch = peekChar(s);
-            switch (ch) {
-            case '/':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, scanComment(s, false));
-                return s->tok.base.type;
-
-            case '*':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, scanComment(s, true));
-                return s->tok.base.type;
-
-            case '=':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_QUO_ASSIGN);
-                return ETOKEN_QUO_ASSIGN;
-
-            default:
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_QUO);
-                return ETOKEN_QUO;
-            }
-
-        case '+':
-            nextChar(s);
-            ch = peekChar(s);
-            switch (ch) {
-            case '+':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_INC);
-                return ETOKEN_INC;
-
-            case '=':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_ADD_ASSIGN);
-                return ETOKEN_ADD_ASSIGN;
-
-            default:
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_ADD);
-                return ETOKEN_ADD;
-            }
-
-        case '-':
-            nextChar(s);
-            ch = peekChar(s);
-            switch (ch) {
-            case '-':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_DEC);
-                return ETOKEN_DEC;
-
-            case '=':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_SUB_ASSIGN);
-                return ETOKEN_SUB_ASSIGN;
-
-            case '>':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_RARROW);
-                return ETOKEN_RARROW;
-
-            default:
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_SUB);
-                return ETOKEN_SUB;
-            }
-
-        case '%':
-            nextChar(s);
-            ch = peekChar(s);
-            switch (ch) {
-            case '=':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_REM_ASSIGN);
-                return ETOKEN_REM_ASSIGN;
-
-            default:
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_REM);
-                return ETOKEN_REM;
-            }
-
-        case '&':
-            nextChar(s);
-            ch = peekChar(s);
-            switch (ch) {
-            case '^':
-                nextChar(s);
-                ch = peekChar(s);
-                switch (ch) {
-                case '=':
-                    nextChar(s);
-                    setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_AND_NOT_ASSIGN);
-                    return ETOKEN_AND_NOT_ASSIGN;
-
-                default:
-                    setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_AND_NOT);
-                    return ETOKEN_AND_NOT;
-                }
-
-            case '=':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_AND_ASSIGN);
-                return ETOKEN_AND_ASSIGN;
-
-            case '&':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_LAND);
-                return ETOKEN_LAND;
-
-            default:
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_AND);
-                return ETOKEN_AND;
-            }
-
-        case '|':
-            nextChar(s);
-            ch = peekChar(s);
-            switch (ch) {
-            case '|':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_LOR);
-                return ETOKEN_LOR;
-
-            case '=':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_OR_ASSIGN);
-                return ETOKEN_OR_ASSIGN;
-
-            default:
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_OR);
-                return ETOKEN_OR;
-            }
-
-        case '^':
-            nextChar(s);
-            ch = peekChar(s);
-            switch (ch) {
-            case '=':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_XOR_ASSIGN);
-                return ETOKEN_XOR_ASSIGN;
-
-            default:
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_XOR);
-                return ETOKEN_XOR;
-            }
-
-        case '<':
-            nextChar(s);
-            ch = peekChar(s);
-            switch (ch) {
-            case '=':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_LEQ);
-                return ETOKEN_LEQ;
-
-            case '<':
-                nextChar(s);
-                ch = peekChar(s);
-                switch (ch) {
-                case '=':
-                    nextChar(s);
-                    setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_SHL_ASSIGN);
-                    return ETOKEN_SHL_ASSIGN;
-
-                default:
-                    setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_SHL);
-                    return ETOKEN_SHL;
-                }
-
-            default:
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_LSS);
-                return ETOKEN_LSS;
-            }
-
-        case '>':
-            nextChar(s);
-            ch = peekChar(s);
-            switch (ch) {
-            case '=':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_GEQ);
-                return ETOKEN_GEQ;
-
-            case '>':
-                nextChar(s);
-                ch = peekChar(s);
-                switch (ch) {
-                case '=':
-                    nextChar(s);
-                    setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_SHR_ASSIGN);
-                    return ETOKEN_SHR_ASSIGN;
-
-                default:
-                    setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_SHR);
-                    return ETOKEN_SHR;
-                }
-
-            default:
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_GTR);
-                return ETOKEN_GTR;
-            }
-
-        case '=':
-            nextChar(s);
-            ch = peekChar(s);
-            switch (ch) {
-            case '=':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_EQL);
-                return ETOKEN_EQL;
-
-            default:
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_ASSIGN);
-                return ETOKEN_ASSIGN;
-            }
-
-        case '!':
-            nextChar(s);
-            ch = peekChar(s);
-            switch (ch) {
-            case '=':
-                nextChar(s);
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_NEQ);
-                return ETOKEN_NEQ;
-
-            default:
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_NOT);
-                return ETOKEN_NOT;
-            }
-
-        default:
-            return scanIdentifier(s);
-        }
-    }
-}
-
-EToken peekTok(SScanner *s)
-{
-    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    return s->tok.base.type;
-}
-
-U8 nextChar(SScanner *s)
-{
-    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    U8 ch = next(s->src);
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    U8 ch = charSrc_next(s->src);
 
     if ((char)ch != EOF) {
         if ((char)ch == '\n') {
@@ -573,63 +169,588 @@ U8 nextChar(SScanner *s)
 
     return ch;
 }
-
-U8 peekChar(SScanner *s)
+static inline U8 peekChar(SScanner *s)
 {
-    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    return peek(s->src);
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    return charSrc_peek(s->src);
+}
+
+static void scanNext(SScanner *const s);
+static void scanIdentifier(SScanner *const s);
+// static void scanInt(const SScanner* s);
+static void scanNumber(SScanner *const s);
+static void scanOctal(SScanner *const s);
+static void scanHex(SScanner *const s);
+static void scanDecimal(SScanner *const s);
+static void scanFloat(SScanner *const s);
+static void scanComment(SScanner *const s, const Bool multiLine);
+
+static Bool isWhitespace(const U8 ch);
+static Bool isAlpha(const U8 ch);
+static Bool isAlnum(const U8 ch);
+static Bool isDecDigit(const U8 ch);
+static Bool isOctDigit(const U8 ch);
+static void skipWhitespace(SScanner *s);
+
+SScanner *scanner_new(const String *const filepath)
+{
+    SCharSrc *src = new_charSrc(filepath);
+    ASSERT_DBG(src, FAILED_CREATE_NEW_S_OBJ_FORMAT, "SCharSrc");
+    return scanner_newSrc(src);
+}
+
+SScanner *scanner_newSrc(SCharSrc *const src)
+{
+    ASSERT(src, NULL_POINTER_ERROR_MSG_FORMAT, "SCharSrc");
+    SScanner *s = (SScanner *)malloc(sizeof(SScanner));
+    ASSERT(s, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SScanner");
+    *(SCharSrc **)&(s->src) = src;
+    s->lnOffs = s->colOffs = 0;
+    STokenInfo _temp;
+    scanner_next(s, &_temp); // initializes s->tokInfo and s->diagnostic
+
+    ASSERT(initKeywordsMap(), "Failed to initialize the keywords map!");
+
+    return s;
+}
+
+const STokenInfo *scanner_peek(SScanner *const s)
+{
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    return &(s->tokInfo);
+}
+
+EDiagnostic scanner_next(SScanner *const s, STokenInfo *const tokenInfo)
+{
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    // NOTE: The next token is expected to have been scanned already or set to EOF!
+    tokenInfo_init(tokenInfo, s->tokInfo.col, s->tokInfo.ln, s->tokInfo.tok, s->tokInfo.lexeme);
+    EDiagnostic diagnostic = s->diagnostic;
+    if (s->tokInfo.tok == ETOKEN_EOF)
+        return diagnostic;
+
+    scanNext(s);
+    return diagnostic;
+}
+
+// Scans the next token and updates s->tokInfo and s->diagnostic accordingly.
+// So that the next token is returned or copied into when needed.
+static void scanNext(SScanner *const s)
+{
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    scanner_resetDiagnostic(s);
+    scanner_resetTokInfo(s);
+    skipWhitespace(s);
+
+    U8 ch = charSrc_peek(s->src);
+    if ((char)ch == EOF) {
+        ASSERT_DBG(
+            s->tokInfo.tok == ETOKEN_EOF,
+            "Expected the scanner reset token info function to set the token to ETOKEN_EOF!");
+        return;
+    }
+
+    if (isDecDigit(ch)) {
+        scanNumber(s);
+    } else {
+        switch (ch) {
+        case '(':
+            nextChar(s);
+            s->tokInfo.tok = ETOKEN_LPAREN;
+            break;
+
+        case '[':
+            nextChar(s);
+            s->tokInfo.tok = ETOKEN_LBRACK;
+            break;
+
+        case '{':
+            nextChar(s);
+            s->tokInfo.tok = ETOKEN_LBRACE;
+            break;
+
+        case ')':
+            nextChar(s);
+            s->tokInfo.tok = ETOKEN_RPAREN;
+            break;
+
+        case ']':
+            nextChar(s);
+            s->tokInfo.tok = ETOKEN_RBRACK;
+            break;
+
+        case '}':
+            nextChar(s);
+            s->tokInfo.tok = ETOKEN_RBRACE;
+            break;
+
+        case ',':
+            nextChar(s);
+            s->tokInfo.tok = ETOKEN_COMMA;
+            break;
+
+        case '.': {
+            nextChar(s);
+            ch = peekChar(s);
+            if (ch == '.') {
+                nextChar(s);
+                ch = peekChar(s);
+                if (ch == '.') {
+                    nextChar(s);
+                    s->tokInfo.tok = ETOKEN_ELLIPSIS;
+                    break;
+                } else {
+                    s->tokInfo.tok = ETOKEN_INVALID;
+                    s->tokInfo.lexeme = new_stringFromLit("..", NULL, NULL);
+                    s->diagnostic = EDIAGNOSTIC_INVALID_IDENT;
+                    break;
+                }
+            }
+            s->tokInfo.tok = ETOKEN_PERIOD;
+            break;
+        }
+
+        case ':':
+            nextChar(s);
+            s->tokInfo.tok = ETOKEN_COLON;
+            break;
+
+        case ';':
+            nextChar(s);
+            s->tokInfo.tok = ETOKEN_SEMICOLON;
+            break;
+
+        case '*':
+            nextChar(s);
+            ch = peekChar(s);
+            switch (ch) {
+            case '=':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_MUL_ASSIGN;
+                break;
+
+            default:
+                s->tokInfo.tok = ETOKEN_ASTERISK;
+                break;
+            }
+            break;
+
+        case '/':
+            nextChar(s);
+            ch = peekChar(s);
+            switch (ch) {
+            case '/':
+                nextChar(s);
+                scanComment(s, false);
+                break;
+
+            case '*':
+                nextChar(s);
+                scanComment(s, true);
+                break;
+
+            case '=':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_QUO_ASSIGN;
+                break;
+
+            default:
+                s->tokInfo.tok = ETOKEN_QUO;
+                break;
+            }
+            break;
+
+        case '+':
+            nextChar(s);
+            ch = peekChar(s);
+            switch (ch) {
+            case '+':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_INC;
+                break;
+
+            case '=':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_ADD_ASSIGN;
+                break;
+
+            default:
+                s->tokInfo.tok = ETOKEN_ADD;
+                break;
+            }
+            break;
+
+        case '-':
+            nextChar(s);
+            ch = peekChar(s);
+            switch (ch) {
+            case '-':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_DEC;
+                break;
+
+            case '=':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_SUB_ASSIGN;
+                break;
+
+            case '>':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_RARROW;
+                break;
+
+            default:
+                s->tokInfo.tok = ETOKEN_SUB;
+                break;
+            }
+            break;
+
+        case '%':
+            nextChar(s);
+            ch = peekChar(s);
+            switch (ch) {
+            case '=':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_REM_ASSIGN;
+                break;
+
+            default:
+                s->tokInfo.tok = ETOKEN_REM;
+                break;
+            }
+            break;
+
+        case '&':
+            nextChar(s);
+            ch = peekChar(s);
+            switch (ch) {
+            case '^':
+                nextChar(s);
+                ch = peekChar(s);
+                switch (ch) {
+                case '=':
+                    nextChar(s);
+                    s->tokInfo.tok = ETOKEN_AND_NOT_ASSIGN;
+                    break;
+
+                default:
+                    s->tokInfo.tok = ETOKEN_AND_NOT;
+                    break;
+                }
+                break;
+
+            case '=':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_AND_ASSIGN;
+                break;
+
+            case '&':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_LAND;
+                break;
+
+            default:
+                s->tokInfo.tok = ETOKEN_AND;
+                break;
+            }
+            break;
+
+        case '|':
+            nextChar(s);
+            ch = peekChar(s);
+            switch (ch) {
+            case '|':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_LOR;
+                break;
+
+            case '=':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_OR_ASSIGN;
+                break;
+
+            default:
+                s->tokInfo.tok = ETOKEN_OR;
+                break;
+            }
+            break;
+
+        case '^':
+            nextChar(s);
+            ch = peekChar(s);
+            switch (ch) {
+            case '=':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_XOR_ASSIGN;
+                break;
+
+            default:
+                s->tokInfo.tok = ETOKEN_XOR;
+                break;
+            }
+            break;
+
+        case '<':
+            nextChar(s);
+            ch = peekChar(s);
+            switch (ch) {
+            case '=':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_LEQ;
+                break;
+
+            case '<':
+                nextChar(s);
+                ch = peekChar(s);
+                switch (ch) {
+                case '=':
+                    nextChar(s);
+                    s->tokInfo.tok = ETOKEN_SHL_ASSIGN;
+                    break;
+
+                default:
+                    s->tokInfo.tok = ETOKEN_SHL;
+                    break;
+                }
+                break;
+
+            default:
+                s->tokInfo.tok = ETOKEN_LSS;
+                break;
+            }
+            break;
+
+        case '>':
+            nextChar(s);
+            ch = peekChar(s);
+            switch (ch) {
+            case '=':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_GEQ;
+                break;
+
+            case '>':
+                nextChar(s);
+                ch = peekChar(s);
+                switch (ch) {
+                case '=':
+                    nextChar(s);
+                    s->tokInfo.tok = ETOKEN_SHR_ASSIGN;
+                    break;
+
+                default:
+                    s->tokInfo.tok = ETOKEN_SHR;
+                    break;
+                }
+                break;
+
+            default:
+                s->tokInfo.tok = ETOKEN_GTR;
+                break;
+            }
+            break;
+
+        case '=':
+            nextChar(s);
+            ch = peekChar(s);
+            switch (ch) {
+            case '=':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_EQL;
+                break;
+
+            default:
+                s->tokInfo.tok = ETOKEN_ASSIGN;
+                break;
+            }
+            break;
+
+        case '!':
+            nextChar(s);
+            ch = peekChar(s);
+            switch (ch) {
+            case '=':
+                nextChar(s);
+                s->tokInfo.tok = ETOKEN_NEQ;
+                break;
+
+            default:
+                s->tokInfo.tok = ETOKEN_NOT;
+                break;
+            }
+            break;
+
+        default:
+            scanIdentifier(s);
+        }
+    }
 }
 
 void del_scanner(SScanner *s)
 {
     if (s) {
-        delScanSrc(s->src);
-        del_string(s->filepath);
+        del_charSrc(s->src);
         del_hashmap(keywords);
         keywords = NULL;
         free(s);
     }
 }
 
-static EToken scanIdentifier(SScanner *s)
+static void scanIdentifier(SScanner *const s)
 {
-    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    s->err = EERROR_TYPE_NO_ERROR;
-    const U64 tokCol = s->colOffs + 1;
-    const U64 tokLn = s->lnOffs + 1;
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    scanner_resetTokInfo(s);
+    scanner_resetDiagnostic(s);
+
     U8 ch = peekChar(s);
     if (!isAlpha(ch) && ch != '_') {
-        setTokIdent(&(s->tok), tokCol, tokLn, ETOKEN_INVALID, NULL);
-        s->err = EERROR_TYPE_INVALID_IDENT;
-        return ETOKEN_INVALID;
+        s->tokInfo.tok = ETOKEN_INVALID;
+        s->diagnostic = EDIAGNOSTIC_INVALID_IDENT;
     }
 
-    StringBuilder *identSb = new_stringBuilder();
+    StringBuilder *identSb = new_stringBuilder(NULL, NULL);
     while (isAlnum(ch) || ch == '_') {
         sb_appendChar(identSb, nextChar(s));
         ch = peekChar(s);
     }
 
     String *ident = sb_toString(identSb);
-    EToken identTokType = hmapStringEToken_get(keywords, ident);
-    if (identTokType != eTokenEnd) {
-        setTokBase(&(s->tok), tokCol, tokLn, identTokType);
-        goto defer;
+    EToken tok = *hashmapStringEToken_get(keywords, ident);
+    if (eTokenIsKeyword(tok)) {
+        s->tokInfo.tok = tok;
+        goto cleanupAll;
     }
-    setTokIdent(&(s->tok), tokCol, tokLn, ETOKEN_IDENT, ident);
 
-defer:
+    s->tokInfo.tok = ETOKEN_IDENT;
+    s->tokInfo.lexeme = ident;
+    goto cleanupAllButIdent;
+
+cleanupAll:
     del_string(ident);
+cleanupAllButIdent:
     del_stringBuilder(identSb);
-    return s->tok.base.type;
 }
 
-static EToken scanNumber(SScanner *s)
+typedef enum ENumBase {
+    eNumBaseBeg,
+    ENUMBASE_10,
+    ENUMBASE_8,
+    ENUMBASE_16,
+    ENUMBASE_2,
+    eNumBaseEnd
+} ENumBase;
+
+// TODO: SHOULD PROBABLY BE MOVED TO PARSER!
+//
+// Converts a given digit character in a given number base
+// to its integral value.
+// For instance:
+//     decimal:     '9' -> 9, '0' -> 0, '3' -> 3, ...
+//     hexadecimal: '2' -> 2, '0' -> 0, 'a' -> 10, 'F' -> 15, ...
+//     octal:       '4' -> 4, '7' -> 7, '0' -> 0, ...
+//     binary:      '0' -> 0, '1' -> 1
+// inline static U64 digitFromCharToInt(const U8 digitChar, const ENumBase base, EErrorType *const
+// err)
+// {
+//     *err = EERROR_TYPE_NO_ERROR;
+//     ASSERT(eNumBaseBeg < base && base < eNumBaseEnd, "Number base enum value is out of range.");
+//
+//     switch (base) {
+//     case ENUMBASE_10:
+//         switch (digitChar) {
+//         case '0':
+//         case '1':
+//         case '2':
+//         case '3':
+//         case '4':
+//         case '5':
+//         case '6':
+//         case '7':
+//         case '8':
+//         case '9':
+//             return digitChar - '0';
+//
+//         default:
+//             *err = EERROR_TYPE_INVALID_DECIMAL_LIT;
+//             return 0;
+//         }
+//
+//     case ENUMBASE_8:
+//         switch (digitChar) {
+//         case '0':
+//         case '1':
+//         case '2':
+//         case '3':
+//         case '4':
+//         case '5':
+//         case '6':
+//         case '7':
+//             return digitChar - '0';
+//
+//         default:
+//             *err = EERROR_TYPE_INVALID_OCTAL_LIT;
+//             return 0;
+//         }
+//
+//     case ENUMBASE_16:
+//         switch (digitChar) {
+//         case '0':
+//         case '1':
+//         case '2':
+//         case '3':
+//         case '4':
+//         case '5':
+//         case '6':
+//         case '7':
+//         case '8':
+//         case '9':
+//             return digitChar - '0';
+//
+//         case 'A':
+//         case 'B':
+//         case 'C':
+//         case 'D':
+//         case 'E':
+//         case 'F':
+//             return (digitChar - 'A') + 10;
+//
+//         case 'a':
+//         case 'b':
+//         case 'c':
+//         case 'd':
+//         case 'e':
+//         case 'f':
+//             return (digitChar - 'a') + 10;
+//
+//         default:
+//             *err = EERROR_TYPE_INVALID_HEX_LIT;
+//             return 0;
+//         }
+//
+//     case ENUMBASE_2:
+//         switch (digitChar) {
+//         case '0':
+//         case '1':
+//             return digitChar - '0';
+//
+//         default:
+//             *err = EERROR_TYPE_INVALID_BINARY_LIT;
+//             return 0;
+//         }
+//
+//     default:
+//         ASSERT(false,
+//                "This is ridiculous, bro! You should've checked the"
+//                " number base enum value to be in the range! You did fuck up!");
+//     }
+// }
+
+static void scanNumber(SScanner *const s)
 {
-    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    s->err = EERROR_TYPE_NO_ERROR;
-    const U64 tokCol = s->colOffs + 1;
-    const U64 tokLn = s->lnOffs + 1;
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    scanner_resetTokInfo(s);
+    scanner_resetDiagnostic(s);
+
     U8 ch = peekChar(s);
     switch (ch) {
     case '0':
@@ -639,102 +760,113 @@ static EToken scanNumber(SScanner *s)
         case 'x':
         case 'X':
             nextChar(s);
-            return scanHex(s);
+            scanHex(s);
+            break;
         default:
             if (isOctDigit(ch)) {
-                return scanOctal(s);
+                scanOctal(s);
             } else if (isDecDigit(ch)) {
-                setTokBase(&(s->tok), tokCol, tokLn, ETOKEN_INVALID);
-                s->err = EERROR_TYPE_INVALID_OCTAL_LIT;
-                return ETOKEN_INVALID;
+                scanner_setTok(s, ETOKEN_INVALID);
+                scanner_setDiagnostic(s, EDIAGNOSTIC_INVALID_OCTAL_LIT);
             } else {
-                setTokNumber(&(s->tok), tokCol, tokLn, ETOKEN_INT_LIT, 0);
-                return ETOKEN_INT_LIT;
+                scanner_setTok(s, ETOKEN_INT_LIT);
+                scanner_setTokLexeme(s, new_stringFromLit("0", NULL, NULL));
             }
         }
+        break;
 
     case '.':
-        return scanFloat(s);
+        scanFloat(s);
+        break;
 
     default:
-        if (isDecDigit(ch))
-            return scanDecimal(s);
-        else
+        if (isDecDigit(ch)) {
+            scanDecimal(s);
+        } else {
             ASSERT(false,
                    "You should've peeked a character before going with"
                    " scanning a number, buddy! It shouldn't have gotten here"
                    " at all. So, you probably FUCKED UP something somewhere...");
+        }
     }
 }
 
-static EToken scanDecimal(SScanner *s)
+static void scanDecimal(SScanner *const s)
 {
-    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    s->err = EERROR_TYPE_NO_ERROR;
-    if (!isDecDigit(peekChar(s)))
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    scanner_resetTokInfo(s);
+    scanner_resetDiagnostic(s);
+
+    if (!isDecDigit(peekChar(s))) {
         ASSERT(false,
                "You should've peeked a character before going with"
                " scanning a decimal, buddy! It shouldn't have gotten here"
                " at all. So, you probably FUCKED UP something somewhere...");
-
-    const U64 tokCol = s->colOffs + 1;
-    const U64 tokLn = s->lnOffs + 1;
-    StringBuilder *digitsSb = new_stringBuilder();
-    while (isDecDigit(peekChar(s)))
-        sb_appendChar(digitsSb, nextChar(s));
-    String *digitsStr = sb_toString(digitsSb);
-    U64 exp10 = 1;
-    U64 numVal = 0;
-    for (U64 i = digitsStr->len - 1;; i--) {
-        const U8 digChar = stringCharAt(digitsStr, i);
-        const U64 digit = digitFromCharToInt(digChar, ENUMBASE_10, &(s->err));
-        if (s->err != EERROR_TYPE_NO_ERROR)
-            return ETOKEN_INVALID;
-        numVal += (exp10 * digit);
-        exp10 *= 10;
-
-        if (i == 0) // because i is unsigned and always >=0
-            break;
     }
 
+    StringBuilder *digitsSb = new_stringBuilder(NULL, NULL);
+    while (isDecDigit(peekChar(s)))
+        sb_appendChar(digitsSb, nextChar(s));
+    String *const digitsStr = sb_toString(digitsSb);
+    scanner_setTok(s, ETOKEN_INT_LIT);
+    scanner_setTokLexeme(s, digitsStr);
+
+    // TODO: MOVE THIS TO PARSER, NUMBERS ARE PARSED AND EVALUATED WHILE GENERATING THE AST!
+    //
+    // U64 exp10 = 1;
+    // U64 numVal = 0;
+    // for (U64 i = digitsStr->len - 1;; i--) {
+    //     const U8 digChar = stringCharAt(digitsStr, i);
+    //     const U64 digit = digitFromCharToInt(digChar, ENUMBASE_10, &(s->err));
+    //     if (s->err != EERROR_TYPE_NO_ERROR)
+    //         return ETOKEN_INVALID;
+    //     numVal += (exp10 * digit);
+    //     exp10 *= 10;
+    //
+    //     if (i == 0) // because i is unsigned and always >=0
+    //         break;
+    // }
+
     del_stringBuilder(digitsSb);
-    del_string(digitsStr);
-    setTokNumber(&(s->tok), tokCol, tokLn, ETOKEN_INT_LIT, numVal);
-    return ETOKEN_INT_LIT;
 }
 
-static EToken scanHex(SScanner *s)
+static void scanHex(SScanner *const s)
 {
-    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
     // TODO
-    return ETOKEN_INVALID;
 }
 
-static EToken scanOctal(SScanner *s)
+static void scanOctal(SScanner *const s)
 {
-    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
     // TODO
-    return ETOKEN_INVALID;
 }
 
-static EToken scanFloat(SScanner *s)
+static void scanFloat(SScanner *const s)
 {
-    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
     // TODO
-    return ETOKEN_INVALID;
 }
 
-static EToken scanComment(SScanner *s, const Bool multiLine)
+static void scanComment(SScanner *const s, const Bool multiLine)
 {
-    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
-    if (multiLine)
-        while (!(nextChar(s) == '*' && nextChar(s) == '/'))
-            ;
-    else
-        while (nextChar(s) != '\n')
-            ;
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    scanner_resetDiagnostic(s);
+    scanner_resetTokInfo(s);
 
-    return ETOKEN_COMMENT;
+    if (multiLine) {
+        while (!(nextChar(s) == '*' && nextChar(s) == '/')) {
+            // TODO: Do we need the comment text later???
+        };
+    } else {
+        while (nextChar(s) != '\n') {
+            // TODO: Do we need the comment text later???
+        };
+    }
+
+    scanner_setTok(s, ETOKEN_COMMENT);
+    // TODO: Do we need the comment text later???
+    //       If so, set the token lexeme here.
 }
 
 static Bool isWhitespace(const U8 ch)
@@ -764,7 +896,7 @@ static Bool isOctDigit(const U8 ch)
 
 static void skipWhitespace(SScanner *s)
 {
-    ASSERT(s != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
+    ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
     U8 ch = peekChar(s);
     while (isWhitespace(ch)) {
         nextChar(s); // skip whitespace
@@ -772,10 +904,10 @@ static void skipWhitespace(SScanner *s)
     }
 }
 
-static void initKeywordsMap()
+static Bool initKeywordsMap()
 {
     if (keywords == NULL)
-        keywords = new_hashmap();
+        keywords = new_hashmap(NULL, string_memDealloc, NULL, string_hash);
 
     const U64 kwsCount = eTokenKeywordEnd - eTokenKeywordBeg - 1;
     const String kws[eTokenKeywordEnd - eTokenKeywordBeg - 1] = {
@@ -839,105 +971,33 @@ static void initKeywordsMap()
     if (keywords->size == 0) {
         for (U64 i = 0; i < kwsCount; i++) {
             const String *kw = kws + i;
-            hmapStringEToken_put(keywords, kw, (EToken)(eTokenKeywordBeg + 1 + i));
-        }
-    }
-}
-
-static inline void setTokBase(UToken *tok, const U64 col, const U64 ln, EToken type)
-{
-    ASSERT(tok != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "UToken");
-    tok->base.col = col;
-    tok->base.ln = ln;
-    tok->base.type = type;
-}
-
-static inline void setTokIdent(UToken *tok,
-                               const U64 col,
-                               const U64 ln,
-                               EToken type,
-                               String *lexeme)
-{
-    setTokBase(tok, col, ln, type);
-    tok->ident.lexeme = lexeme;
-}
-
-static void setTokNumber(UToken *tok, const U64 col, const U64 ln, EToken type, const U64 val)
-{
-    setTokBase(tok, col, ln, type);
-    tok->number.val = val;
-}
-
-// ===============================================================================
-// ================================== SScanSrc ===================================
-// ===============================================================================
-
-static U8 next(SScanSrc *src)
-{
-    ASSERT(src != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanSrc");
-    const U8 ch = src->buf[src->next];
-
-    if ((char)ch != EOF) {
-        src->next = ((src->next + 1) % (2 * SCANNER_BUFFER_SIZE));
-
-        // if next is the beginning of one of the buffers
-        if (src->next % SCANNER_BUFFER_SIZE == 0) {
-            fillScanSrcBuf(src);
-            src->bufEnd = ((src->next + SCANNER_BUFFER_SIZE) % (2 * SCANNER_BUFFER_SIZE));
+            const EToken kwTok = (eTokenKeywordBeg + 1 + i);
+            hashmapStringEToken_put(keywords, kw, &kwTok);
         }
     }
 
-    return ch;
-}
-
-static U8 peek(SScanSrc *src)
-{
-    ASSERT(src != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanSrc");
-    return src->buf[src->next];
-}
-
-static SScanSrc *initScanSrc(const String *const filepath)
-{
-    FILE *srcFile = fopen((const char *)filepath->bytes, "r");
-    ASSERT(srcFile != NULL, "Failed to open file %s\n", (const char *)filepath->bytes);
-    SScanSrc *src = (SScanSrc *)malloc(sizeof(SScanSrc));
-    ASSERT(src != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SScanSrc");
-    src->file = srcFile;
-    srcFile = NULL;
-    src->bufEnd = SCANNER_BUFFER_SIZE;
-    src->next = 0;
-    fillScanSrcBuf(src);
-
-    return src;
-}
-
-static void delScanSrc(SScanSrc *src)
-{
-    if (src) {
-        if (src->file)
-            fclose(src->file);
-        src->file = NULL;
-        free(src);
-    }
-}
-
-// Fills the current buffer that the scanner is currently processing
-// with the next chunk of bytes from the src file.
-static void fillScanSrcBuf(SScanSrc *src)
-{
-    ASSERT(src != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "SScanSrc");
-    U8 *buf = src->buf + src->next;
-    fflush(stdout);
-    U64 n = (U64)fread(buf, sizeof(U8), SCANNER_BUFFER_SIZE, src->file);
-
-    if (feof(src->file)) {
-        buf[n] = EOF;
-    }
+    return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
 // HashMap<String, EToken>
 ///////////////////////////////////////////////////////////////////////////////////
+static void printHashMapStringKey(FILE *const out, const U8 *const key)
+{
+    ASSERT(out != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "FILE");
+    ASSERT(key != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "U8");
+    fprintf(out, "\"%s\"", key);
+}
+
+static void printHashMapETokenVal(FILE *const out, const U8 *const val)
+{
+    ASSERT(out != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "FILE");
+    ASSERT(val != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "U8");
+
+    EToken tok = *((EToken *)val);
+    fprintf(out, "%s", eTokenToCStr(tok));
+}
+
 void printHashMapStringEToken(const HashMap *const hm)
 {
     hashmap_print(hm, stdout, printHashMapStringKey, printHashMapETokenVal);

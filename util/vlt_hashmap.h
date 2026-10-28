@@ -44,11 +44,11 @@ MapElem *hashmap_get(const HashMap *const hm, const U8 *const key, const U64 key
 void hashmap_del(HashMap *const hm, const U8 *const key, const U64 keySize);
 
 #define GEN_HASHMAP_OF(K, V)                                                                       \
-    inline void hashmap##K##V_put(HashMap *const hm, const K *const key, const V *const val)       \
+    inline void hashmap##K##V##_put(HashMap *const hm, const K *const key, const V *const val)     \
     {                                                                                              \
         hashmap_put(hm, (const U8 *const)key, sizeof(K), (const U8 *const)val, sizeof(V));         \
     }                                                                                              \
-    inline const V *hashmap##K##V_get(const HashMap *const hm, const K *const key)                 \
+    inline const V *hashmap##K##V##_get(const HashMap *const hm, const K *const key)               \
     {                                                                                              \
         MapElem *elem = hashmap_get(hm, (const U8 *const)key, sizeof(K));                          \
         if (elem) {                                                                                \
@@ -60,7 +60,7 @@ void hashmap_del(HashMap *const hm, const U8 *const key, const U64 keySize);
             return (EToken *)elem->val;                                                            \
         }                                                                                          \
     }                                                                                              \
-    inline void hashmap##K##V_del(HashMap *const hm, const K *const key)                           \
+    inline void hashmap##K##V##_del(HashMap *const hm, const K *const key)                         \
     {                                                                                              \
         hashmap_del(hm, (const U8 *const)key, sizeof(K));                                          \
     }

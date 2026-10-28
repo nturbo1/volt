@@ -175,17 +175,23 @@ inline Bool eTokenIsDeclSpecifier(const EToken tok)
 const char *eTokenToCStr(EToken tok);
 
 typedef struct STokenInfo {
-    const U64 col;
-    const U64 ln;
-    const EToken tok;
-    const String *const lexeme;
+    U64 col;
+    U64 ln;
+    EToken tok;
+    String *lexeme;
 } STokenInfo;
 
-STokenInfo *new_sTokenInfo(const U64 col,
+inline void tokenInfo_init(STokenInfo *const tokenInfo,
+                           const U64 col,
                            const U64 ln,
                            const EToken tok,
-                           const String *const lexeme);
-
-void del_sTokenInfo(STokenInfo *tokInfo);
+                           const String *const lexeme)
+{
+    ASSERT(tokenInfo, NULL_POINTER_ERROR_MSG_FORMAT, "STokenInfo");
+    tokenInfo->col = col;
+    tokenInfo->ln = ln;
+    tokenInfo->tok = tok;
+    tokenInfo->lexeme = string_copy(lexeme, 0, string_len(lexeme));
+}
 
 #endif // FRONTEND_C_TOKEN_H
