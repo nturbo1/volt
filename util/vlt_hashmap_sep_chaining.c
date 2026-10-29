@@ -117,6 +117,7 @@ MapElem *hashmap_get(const HashMap *const hm, const U8 *const key, const U64 key
            hm->bucketsSize);
 
     const U64 keyHash = hm->fHash(key, keySize);
+    // TODO: Replace the % operator with a bitwise AND operatoro
     MapBucketEntry *bucketEntry = hm->buckets + (keyHash % hm->bucketsSize);
     ASSERT((bucketEntry->head == NULL) == (bucketEntry->size == 0),
            HMAP_BUCKET_ENTRY_HEAD_AND_SIZE_ARE_NOT_CONSISTENT_ERROR_MSG_FORMAT,
@@ -140,6 +141,7 @@ void hashmap_del(HashMap *const hm, const U8 *const key, const U64 keySize)
 {
     ASSERT(hm != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "HashMap");
     const U64 keyHash = hm->fHash(key, keySize);
+    // TODO: Replace the % operator with a bitwise AND operatoro
     MapBucketEntry *bucketEntry = hm->buckets + (keyHash % hm->bucketsSize);
     ASSERT((bucketEntry->head == NULL) == (bucketEntry->size == 0),
            HMAP_BUCKET_ENTRY_HEAD_AND_SIZE_ARE_NOT_CONSISTENT_ERROR_MSG_FORMAT,
@@ -215,6 +217,7 @@ static void putKV(HashMap *const hm, // for accessing unchanged/common funcs and
     ASSERT(buckets != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "MapBucketEntry");
 
     const U64 keyHash = hm->fHash(key, keySize);
+    // TODO: Replace the % operator with a bitwise AND operatoro
     MapBucketEntry *bucketEntry = buckets + (keyHash % bucketsSize);
 
     MapElemNode *prev = NULL;
