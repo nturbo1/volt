@@ -2,7 +2,7 @@
 #define BASE_STRINGBUILDER_H
 
 #include "config.h"
-#include "vlt_memory.h"
+#include "core/vlt_memory.h"
 #include "vlt_string.h"
 
 typedef struct StringBuilder {

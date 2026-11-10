@@ -43,31 +43,29 @@ String *string_copy(const String *const source, const U64 startIdx, const U64 en
 void del_string(String *str);
 
 // Compares two strings and returns true if they're equal
-Bool stringEqual(String *s1, String *s2);
+Bool stringEqual(const String *const s1, const String *const s2);
 
 // Returns a character at a given index in a given String
 U8 stringCharAt(String *s, U64 idx);
 
-inline U64 string_len(const String *const s)
+static inline U64 string_len(const String *const s)
 {
     ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "String");
     return s->len;
 }
 
-inline Bool string_isEmpty(const String *const s)
+static inline Bool string_isEmpty(const String *const s)
 {
-    return string_len(s) > 0;
+    return string_len(s) <= 0;
 }
 
 // Used by containers/collections that store elements or keys of type String.
-inline void string_memDealloc(void *s)
-{
-    String *str = (String *)s;
-    if (str)
-        del_string(str);
-}
+void string_memDealloc(void *s);
+void *string_memAlloc(U64 size /* = sizeof(String) */);
+static const MemAllocator stringKeyAllocator
+    = { .fAlloc = string_memAlloc, .fDealloc = string_memDealloc };
 
-inline U64 string_hash(const U8 *const str, const U64 size)
+static inline U64 string_hash(const U8 *const str, const U64 size)
 {
     ASSERT_DBG(size == sizeof(String), "String obj bytes size doesn't match the String type size.");
     String *s = (String *)str;

@@ -1,6 +1,6 @@
 #include "vlt_stringBuilder.h"
-#include "base.h"
-#include "vlt_assert.h"
+#include "config.h"
+#include "core/vlt_assert.h"
 #include "vlt_string.h"
 
 #include <stdlib.h>

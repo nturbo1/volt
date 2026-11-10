@@ -11,6 +11,7 @@ add_subdirectory(frontend)
 
 target_link_libraries(vcc
     PRIVATE
+    c_frontend
     volt_config
-    # c_frontend
+    volt_cutil
 )

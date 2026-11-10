@@ -1,8 +1,8 @@
 #include "scanner.h"
 #include "config.h"
+#include "core/vlt_memory.h"
 #include "token.h"
 #include "vlt_hashmap.h"
-#include "vlt_memory.h"
 #include "vlt_string.h"
 #include "vlt_stringBuilder.h"
 
@@ -54,6 +54,7 @@ SCharSrc *new_charSrc(const String *const filepath)
     ASSERT(src != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SCharSrc");
     src->file = srcFile;
     srcFile = NULL;
+    *((String **)&(src->filepath)) = string_copy(filepath, 0, string_len(filepath));
     src->bufEnd = CHAR_SRC_BUFFER_SIZE;
     src->next = 0;
     charSrc_fillBuf(src);
@@ -105,14 +106,6 @@ String *charSrc_getFilepath(const SCharSrc *const src)
 // ===============================================================================
 // ================================== SScanner ===================================
 // ===============================================================================
-struct Scanner {
-    SCharSrc *const src;
-    U64 lnOffs; // line offset in the src file
-    U64 colOffs; // column offset in the src file
-    STokenInfo tokInfo; // the latest scanned token info
-    EDiagnostic diagnostic; // lexical diagnostic about the latest scanned token
-};
-
 static inline void scanner_resetTokInfo(SScanner *const s)
 {
     ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
@@ -127,27 +120,27 @@ static inline void scanner_resetDiagnostic(SScanner *const s)
     ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
     s->diagnostic = EDiagnosticEnd;
 }
-inline void scanner_setTokCol(SScanner *const s, const U64 col)
+static inline void scanner_setTokCol(SScanner *const s, const U64 col)
 {
     ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
     s->tokInfo.col = col;
 }
-inline void scanner_setTokLn(SScanner *const s, const U64 ln)
+static inline void scanner_setTokLn(SScanner *const s, const U64 ln)
 {
     ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
     s->tokInfo.ln = ln;
 }
-inline void scanner_setTok(SScanner *const s, const EToken tok)
+static inline void scanner_setTok(SScanner *const s, const EToken tok)
 {
     ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
     s->tokInfo.tok = tok;
 }
-inline void scanner_setTokLexeme(SScanner *const s, String *const lexeme)
+static inline void scanner_setTokLexeme(SScanner *const s, String *const lexeme)
 {
     ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
     s->tokInfo.lexeme = lexeme;
 }
-inline void scanner_setDiagnostic(SScanner *const s, const EDiagnostic diagnostic)
+static inline void scanner_setDiagnostic(SScanner *const s, const EDiagnostic diagnostic)
 {
     ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
     s->diagnostic = diagnostic;
@@ -192,26 +185,37 @@ static Bool isDecDigit(const U8 ch);
 static Bool isOctDigit(const U8 ch);
 static void skipWhitespace(SScanner *s);
 
-SScanner *scanner_new(const String *const filepath)
+SScanner *new_scanner(const String *const filepath)
 {
     SCharSrc *src = new_charSrc(filepath);
     ASSERT_DBG(src, FAILED_CREATE_NEW_S_OBJ_FORMAT, "SCharSrc");
-    return scanner_newSrc(src);
+    return new_scannerExtSrc(src);
 }
 
-SScanner *scanner_newSrc(SCharSrc *const src)
+SScanner *new_scannerExtSrc(SCharSrc *const src)
 {
     ASSERT(src, NULL_POINTER_ERROR_MSG_FORMAT, "SCharSrc");
     SScanner *s = (SScanner *)malloc(sizeof(SScanner));
     ASSERT(s, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "SScanner");
     *(SCharSrc **)&(s->src) = src;
     s->lnOffs = s->colOffs = 0;
-    STokenInfo _temp;
-    scanner_next(s, &_temp); // initializes s->tokInfo and s->diagnostic
+    tokenInfo_init(&(s->tokInfo), 0, 0, eTokenEnd, NULL);
+
+    scanNext(s); // initializes s->tokInfo and s->diagnostic
 
     ASSERT(initKeywordsMap(), "Failed to initialize the keywords map!");
 
     return s;
+}
+
+void del_scanner(SScanner *s)
+{
+    if (s) {
+        del_charSrc(s->src);
+        del_hashmap(keywords);
+        keywords = NULL;
+        free(s);
+    }
 }
 
 const STokenInfo *scanner_peek(SScanner *const s)
@@ -586,16 +590,6 @@ static void scanNext(SScanner *const s)
     }
 }
 
-void del_scanner(SScanner *s)
-{
-    if (s) {
-        del_charSrc(s->src);
-        del_hashmap(keywords);
-        keywords = NULL;
-        free(s);
-    }
-}
-
 static void scanIdentifier(SScanner *const s)
 {
     ASSERT(s, NULL_POINTER_ERROR_MSG_FORMAT, "SScanner");
@@ -907,7 +901,7 @@ static void skipWhitespace(SScanner *s)
 static Bool initKeywordsMap()
 {
     if (keywords == NULL)
-        keywords = new_hashmap(NULL, string_memDealloc, NULL, string_hash);
+        keywords = new_hashmap(&stringKeyAllocator, NULL, NULL, string_hash);
 
     const U64 kwsCount = eTokenKeywordEnd - eTokenKeywordBeg - 1;
     const String kws[eTokenKeywordEnd - eTokenKeywordBeg - 1] = {

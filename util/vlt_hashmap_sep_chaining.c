@@ -1,6 +1,6 @@
-#include "vlt_assert.h"
-#include "vlt_bytes.h"
-#include "vlt_hash.h"
+#include "core/vlt_assert.h"
+#include "core/vlt_bytes.h"
+#include "core/vlt_hash.h"
 #include "vlt_hashmap.h"
 
 #include <stdio.h>
@@ -48,20 +48,26 @@ static void putKV(HashMap *const hm, // for accessing unchanged/common funcs and
 
 #define DEFAULT_HMAP_BUCKET_SIZE 16
 
-HashMap *new_hashmap(FMemAlloc *const fAllocMem,
-                     FMemDealloc *const fDeallocMem,
+HashMap *new_hashmap(const MemAllocator *const keyAllocator,
+                     const MemAllocator *const valueAllocator,
                      FComparator *const fCompareKeys,
                      FHash *const fHash)
 {
-    FMemAlloc *const fAllocM = fAllocMem ? fAllocMem : malloc;
-    FMemDealloc *const fDeallocM = fDeallocMem ? fDeallocMem : free;
+    FMemAlloc *const fAllocKey
+        = keyAllocator && keyAllocator->fAlloc ? keyAllocator->fAlloc : malloc;
+    FMemDealloc *const fDeallocKey
+        = keyAllocator && keyAllocator->fDealloc ? keyAllocator->fDealloc : free;
+    FMemAlloc *const fAllocValue
+        = valueAllocator && valueAllocator->fAlloc ? valueAllocator->fAlloc : malloc;
+    FMemDealloc *const fDeallocValue
+        = valueAllocator && valueAllocator->fDealloc ? valueAllocator->fDealloc : free;
     FHash *const hashFunc = fHash ? fHash : hash;
     FComparator *const fCompareK = fCompareKeys ? fCompareKeys : bytesEqual;
 
-    HashMap *hm = (HashMap *)fAllocM(sizeof(HashMap));
+    HashMap *hm = (HashMap *)malloc(sizeof(HashMap));
     ASSERT(hm != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "a HashMap obj");
     hm->buckets = NULL;
-    hm->buckets = fAllocM(sizeof(MapBucketEntry) * DEFAULT_HMAP_BUCKET_SIZE);
+    hm->buckets = malloc(sizeof(MapBucketEntry) * DEFAULT_HMAP_BUCKET_SIZE);
     ASSERT(hm->buckets != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "a HashMap buckets");
     hm->bucketsSize = DEFAULT_HMAP_BUCKET_SIZE;
     for (U64 i = 0; i < hm->bucketsSize; i++) {
@@ -69,8 +75,10 @@ HashMap *new_hashmap(FMemAlloc *const fAllocMem,
         hm->buckets[i].size = 0;
     }
     hm->size = 0;
-    *(FMemAlloc **)&(hm->fAllocMem) = fAllocM;
-    *(FMemDealloc **)&(hm->fDeallocMem) = fDeallocM;
+    *(FMemAlloc **)&(hm->keyAllocator.fAlloc) = fAllocKey;
+    *(FMemDealloc **)&(hm->keyAllocator.fDealloc) = fDeallocKey;
+    *(FMemAlloc **)&(hm->valueAllocator.fAlloc) = fAllocValue;
+    *(FMemDealloc **)&(hm->valueAllocator.fDealloc) = fDeallocValue;
     *(FComparator **)&(hm->fCompareKeys) = fCompareK;
     *(FHash **)&(hm->fHash) = hashFunc;
 
@@ -82,11 +90,11 @@ void del_hashmap(HashMap *hm)
     if (hm != NULL) {
         for (U64 i = 0; i < hm->bucketsSize; i++)
             hashmap_delBucketEntryElems(hm, hm->buckets + i);
-        hm->fDeallocMem(hm->buckets);
+        free(hm->buckets);
         hm->buckets = NULL;
         hm->bucketsSize = 0;
         hm->size = 0;
-        hm->fDeallocMem(hm);
+        free(hm);
     }
 }
 
@@ -197,11 +205,11 @@ static void hashmap_delElemNode(HashMap *const hm, MapElemNode *node)
 {
     ASSERT(hm != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "HashMap");
     if (node != NULL) {
-        hm->fDeallocMem((U8 *)node->elem.key);
-        hm->fDeallocMem(node->elem.val);
+        hm->keyAllocator.fDealloc((U8 *)node->elem.key);
+        hm->valueAllocator.fDealloc(node->elem.val);
         node->elem.val = NULL;
         node->elem.valSize = 0;
-        hm->fDeallocMem(node);
+        free(node);
     }
 }
 
@@ -224,7 +232,7 @@ static void putKV(HashMap *const hm, // for accessing unchanged/common funcs and
     MapElemNode *curr = bucketEntry->head;
     while (curr) {
         if (curr->elem.keySize == keySize && hm->fCompareKeys(curr->elem.key, key, keySize)) {
-            hm->fDeallocMem(curr->elem.val);
+            hm->valueAllocator.fDealloc(curr->elem.val);
             curr->elem.val = copyBytesToNew(val, valSize);
             curr->elem.valSize = valSize;
             return;
@@ -247,8 +255,7 @@ static void rehash(HashMap *hm)
     ASSERT(hm != NULL, NULL_POINTER_ERROR_MSG_FORMAT, "HashMap");
 
     const U64 newBucketsSize = hm->bucketsSize * 2;
-    MapBucketEntry *newBuckets
-        = (MapBucketEntry *)hm->fAllocMem(sizeof(MapBucketEntry) * newBucketsSize);
+    MapBucketEntry *newBuckets = (MapBucketEntry *)malloc(sizeof(MapBucketEntry) * newBucketsSize);
     ASSERT(newBuckets != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "HashMap new buckets array");
     for (U64 i = 0; i < newBucketsSize; i++) {
         newBuckets[i].head = NULL;
@@ -284,7 +291,7 @@ static void rehash(HashMap *hm)
 
     for (U64 i = 0; i < hm->bucketsSize; i++)
         hashmap_delBucketEntryElems(hm, hm->buckets + i);
-    hm->fDeallocMem(hm->buckets);
+    free(hm->buckets);
     hm->buckets = newBuckets;
     hm->bucketsSize = newBucketsSize;
 }
@@ -296,7 +303,7 @@ static MapElemNode *hashmap_NewMapElemNode(HashMap *const hm,
                                            const U64 valSize)
 {
     ASSERT(hm, NULL_POINTER_ERROR_MSG_FORMAT, "HashMap");
-    MapElemNode *newElemNode = hm->fAllocMem(sizeof(MapElemNode));
+    MapElemNode *newElemNode = malloc(sizeof(MapElemNode));
     ASSERT(newElemNode != NULL, FAILED_TO_ALLOC_MEM_FOR_FORMAT, "a MapElemNode obj");
     *((U8 **)&(newElemNode->elem.key)) = copyBytesToNew(key, keySize);
     *((U64 *)&(newElemNode->elem.keySize)) = keySize;

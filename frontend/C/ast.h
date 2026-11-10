@@ -1,6 +1,10 @@
 #ifndef FRONTEND_C_AST_H
 #define FRONTEND_C_AST_H
 
+#include "token.h"
+#include "vlt_string.h"
+#include "vlt_vector.h"
+
 typedef enum EASTNodeType {
     EASTNODETYPE_DECL,
     EASTNODETYPE_EXPR,
@@ -13,11 +17,10 @@ typedef enum EASTNodeType {
 } EASTNodeType;
 
 typedef struct SParserASTNode {
-    const UToken tok;
+    const STokenInfo tokInfo;
     const EASTNodeType type;
 } SParserASTNode;
-
-void initAstNode(SParserASTNode *const node, const UToken *const tok);
+void parserAstNode_init(SParserASTNode *const node, const STokenInfo *const tokInfo);
 
 typedef struct SParserAST {
     SParserASTNode *root;
@@ -40,7 +43,7 @@ typedef struct STypeQual {
     const SParserASTNode node;
     ETypeQualType type;
 } STypeQual;
-void initSTypeQual(STypeQual *const typeQual, const UToken *const tok);
+void typeQual_init(STypeQual *const typeQual, const STokenInfo *const tokInfo);
 
 typedef enum ETypeSpecifierType {
     ETYPESPECIFIERTYPE_VOID,
@@ -63,12 +66,12 @@ typedef struct STypeSpecifier {
     const SParserASTNode node;
     const ETypeSpecifierType type;
 } STypeSpecifier;
-void initSTypeSpecifier(STypeSpecifier *const typeSp, const UToken *const tok);
+void typeSpecifier_init(STypeSpecifier *const typeSp, const STokenInfo *const tokInfo);
 
 typedef struct SFuncSpecifier {
     const SParserASTNode node;
 } SFuncSpecifier;
-void initSFuncSpecifier(SFuncSpecifier *const funcSp, const UToken *const tok);
+void funcSpecifier_init(SFuncSpecifier *const funcSp, const STokenInfo *const tokInfo);
 
 typedef enum EStorageClassType {
     ESTRGCLASSTYPE_TYPEDEF,
@@ -82,7 +85,7 @@ typedef struct SStorageClass {
     const SParserASTNode node;
     EStorageClassType type;
 } SStorageClass;
-void initSStorageClass(SStorageClass *const strgClass, const UToken *const tok);
+void storageClass_init(SStorageClass *const strgClass, const STokenInfo *const tokInfo);
 
 typedef enum EDeclSpecifierType {
     EDECLSPECIFIERTYPE_STORAGE_CLASS,
@@ -102,7 +105,7 @@ typedef struct SDeclSpecifier {
     const EDeclSpecifierType type;
     const UDeclSpecifierCore core;
 } SDeclSpecifier;
-void initSDeclSpecifier(SDeclSpecifier *const declSp, const UToken *const tok);
+void declSpecifier_init(SDeclSpecifier *const declSp, const STokenInfo *const tokInfo);
 
 typedef enum EDeclType {
     EDECLTYPE_FUNC,

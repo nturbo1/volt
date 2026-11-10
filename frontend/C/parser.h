@@ -13,7 +13,6 @@ typedef struct STokWind STokWind;
 typedef struct SParser {
     SScanner *scanner;
     SParserAST *ast;
-    SErrHandler *eh;
     // TODO: add separate buffers for prev and next tokens
 } SParser;
 

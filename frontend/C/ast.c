@@ -10,7 +10,7 @@ void initAstNode(SParserASTNode *const node, const UToken *const tok, const EAST
     *((EASTNodeType *)(node->type)) = type;
 }
 
-void initSStorageClass(SStorageClass *const strgClass, const UToken *const tok)
+void storageClass_init(SStorageClass *const strgClass, const STokenInfo *const tokInfo)
 {
     ASSERT(strgClass, NULL_POINTER_ERROR_MSG_FORMAT, "SStorageClass");
     ASSERT(tok, NULL_POINTER_ERROR_MSG_FORMAT, "UToken");
@@ -43,7 +43,7 @@ void initSStorageClass(SStorageClass *const strgClass, const UToken *const tok)
     }
 }
 
-void initSTypeQual(STypeQual *const typeQual, const UToken *const tok)
+void typeQual_init(STypeQual *const typeQual, const STokenInfo *const tokInfo)
 {
     ASSERT(typeQual, NULL_POINTER_ERROR_MSG_FORMAT, "STypeQual");
     ASSERT(tok, NULL_POINTER_ERROR_MSG_FORMAT, "UToken");
@@ -68,7 +68,7 @@ void initSTypeQual(STypeQual *const typeQual, const UToken *const tok)
     }
 }
 
-void initSTypeSpecifier(STypeSpecifier *const typeSp, const UToken *const tok)
+void typeSpecifier_init(STypeSpecifier *const typeSp, const STokenInfo *const tokInfo)
 {
     ASSERT(typeSp, NULL_POINTER_ERROR_MSG_FORMAT, "STypeSpecifier");
     ASSERT(tok, NULL_POINTER_ERROR_MSG_FORMAT, "UToken");
@@ -142,14 +142,14 @@ void initSTypeSpecifier(STypeSpecifier *const typeSp, const UToken *const tok)
     }
 }
 
-void initSFuncSpecifier(SFuncSpecifier *const funcSp, const UToken *const tok)
+void funcSpecifier_init(SFuncSpecifier *const funcSp, const STokenInfo *const tokInfo)
 {
     ASSERT(funcSp, NULL_POINTER_ERROR_MSG_FORMAT, "SFuncSpecifier");
     ASSERT(tok, NULL_POINTER_ERROR_MSG_FORMAT, "UToken");
     initAstNode(&(funcSp->node), tok, EASTNODETYPE_FUNC_SPECIFIER);
 }
 
-void initSDeclSpecifier(SDeclSpecifier *const declSp, const UToken *const tok)
+void declSpecifier_init(SDeclSpecifier *const declSp, const STokenInfo *const tokInfo)
 {
     ASSERT(declSp, NULL_POINTER_ERROR_MSG_FORMAT, "SDeclSpecifier");
     ASSERT(tok, NULL_POINTER_ERROR_MSG_FORMAT, "UToken");
@@ -168,7 +168,8 @@ void initSDeclSpecifier(SDeclSpecifier *const declSp, const UToken *const tok)
         declSp->type = EDECLSPECIFIERTYPE_FUNC_SPECIFIER;
         initSFuncSpecifier(declSp->core.storageClass, tok);
     } else {
-        ASSERT(
-            false, "Invalid declaration specifier token of type %s.", eTokenToCStr(tok->base.type));
+        ASSERT(false,
+               "Invalid declaration specifier token of type %s.",
+               eTokenToCStr(tok->base.type));
     }
 }

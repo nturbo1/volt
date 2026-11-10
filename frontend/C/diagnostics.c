@@ -1,6 +1,6 @@
 #include "diagnostics.h"
 #include "config.h"
-#include "vlt_assert.h"
+#include "core/vlt_assert.h"
 #include "vlt_vector.h"
 
 #include <stdio.h>

@@ -72,7 +72,7 @@ void del_string(String *str)
     fDeallocMem(str);
 }
 
-Bool stringEqual(String *s1, String *s2)
+Bool stringEqual(const String *const s1, const String *const s2)
 {
     if (s1 == NULL || s2 == NULL)
         return false;
@@ -86,3 +86,12 @@ U8 stringCharAt(String *s, U64 idx)
     ASSERT(s->len > idx, "String character index %zu is out of bounds.", idx);
     return s->bytes[idx];
 }
+
+void string_memDealloc(void *s)
+{
+    String *str = (String *)s;
+    if (str)
+        del_string(str);
+}
+
+void *string_memAlloc(U64 size /* = sizeof(String) */) { }

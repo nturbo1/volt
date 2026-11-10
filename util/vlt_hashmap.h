@@ -2,9 +2,9 @@
 #define BASE_VLT_HASHMAP_H
 
 #include "config.h"
-#include "vlt_assert.h"
-#include "vlt_container.h"
-#include "vlt_memory.h"
+#include "core/vlt_assert.h"
+#include "core/vlt_container.h"
+#include "core/vlt_memory.h"
 
 #include <stdio.h>
 
@@ -20,15 +20,15 @@ struct SHashMap {
     MapBucketEntry *buckets;
     U64 bucketsSize;
     U64 size;
-    FMemAlloc *const fAllocMem;
-    FMemDealloc *const fDeallocMem;
+    const MemAllocator keyAllocator;
+    const MemAllocator valueAllocator;
     FComparator *const fCompareKeys;
     FHash *const fHash;
 };
 typedef struct SHashMap HashMap;
 
-HashMap *new_hashmap(FMemAlloc *const fAllocMem,
-                     FMemDealloc *const fDeallocMem,
+HashMap *new_hashmap(const MemAllocator *const keyAllocator,
+                     const MemAllocator *const valueAllocator,
                      FComparator *const fCompareKeys,
                      FHash *const fHash);
 
@@ -44,11 +44,14 @@ MapElem *hashmap_get(const HashMap *const hm, const U8 *const key, const U64 key
 void hashmap_del(HashMap *const hm, const U8 *const key, const U64 keySize);
 
 #define GEN_HASHMAP_OF(K, V)                                                                       \
-    inline void hashmap##K##V##_put(HashMap *const hm, const K *const key, const V *const val)     \
+    static inline void hashmap##K##V##_put(HashMap *const hm,                                      \
+                                           const K *const key,                                     \
+                                           const V *const val)                                     \
     {                                                                                              \
         hashmap_put(hm, (const U8 *const)key, sizeof(K), (const U8 *const)val, sizeof(V));         \
     }                                                                                              \
-    inline const V *hashmap##K##V##_get(const HashMap *const hm, const K *const key)               \
+                                                                                                   \
+    static inline const V *hashmap##K##V##_get(const HashMap *const hm, const K *const key)        \
     {                                                                                              \
         MapElem *elem = hashmap_get(hm, (const U8 *const)key, sizeof(K));                          \
         if (elem) {                                                                                \
@@ -59,8 +62,11 @@ void hashmap_del(HashMap *const hm, const U8 *const key, const U64 keySize);
                        "Map element value size doesn't match the value type size.");               \
             return (EToken *)elem->val;                                                            \
         }                                                                                          \
+                                                                                                   \
+        return NULL;                                                                               \
     }                                                                                              \
-    inline void hashmap##K##V##_del(HashMap *const hm, const K *const key)                         \
+                                                                                                   \
+    static inline void hashmap##K##V##_del(HashMap *const hm, const K *const key)                  \
     {                                                                                              \
         hashmap_del(hm, (const U8 *const)key, sizeof(K));                                          \
     }

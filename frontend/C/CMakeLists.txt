@@ -2,9 +2,9 @@ add_library(c_frontend
     scanner.c
     token.c
     diagnostics.c
-    parser.c
-    ast.c
-    compiler.c
+    # parser.c
+    # ast.c
+    # compiler.c
 )
 target_link_libraries(c_frontend
     PUBLIC

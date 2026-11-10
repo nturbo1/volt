@@ -1,5 +1,5 @@
+#include "core/vlt_bytes.h"
 #include "vctest.h"
-#include "vlt_bytes.h"
 #include "vlt_string.h"
 #include "vlt_stringBuilder.h"
 
@@ -56,11 +56,11 @@ TEST(whenAppendString_thenAppendStringToGivenStringBuilderAndUpdateProperly,
 {
     U64 inputsSize = 5;
     String *inputs[] = {
-        new_stringFromLit("Hello"),
-        new_stringFromLit("Hello World"),
-        new_stringFromLit("908asg908a;kla"),
-        new_stringFromLit("0'ldsgqkh-0}kqk--a9env;ks;"),
-        new_stringFromLit(""),
+        new_stringFromLit("Hello", NULL, NULL),
+        new_stringFromLit("Hello World", NULL, NULL),
+        new_stringFromLit("908asg908a;kla", NULL, NULL),
+        new_stringFromLit("0'ldsgqkh-0}kqk--a9env;ks;", NULL, NULL),
+        new_stringFromLit("", NULL, NULL),
     };
 
     for (U64 i = 0; i < inputsSize; i++) {
@@ -122,11 +122,11 @@ TEST(whenToString_thenReturnCorrectString,
 {
     U64 inputsSize = 5;
     String *inputs[] = {
-        new_stringFromLit("Hello"),
-        new_stringFromLit("Hello World"),
-        new_stringFromLit("908asg908a;kla"),
-        new_stringFromLit("0'ldsgqkh-0}kqk--a9env;ks;"),
-        new_stringFromLit(""),
+        new_stringFromLit("Hello", NULL, NULL),
+        new_stringFromLit("Hello World", NULL, NULL),
+        new_stringFromLit("908asg908a;kla", NULL, NULL),
+        new_stringFromLit("0'ldsgqkh-0}kqk--a9env;ks;", NULL, NULL),
+        new_stringFromLit("", NULL, NULL),
     };
 
     for (U64 i = 0; i < inputsSize; i++) {

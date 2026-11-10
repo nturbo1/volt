@@ -2,8 +2,8 @@
 #define BASE_VLT_VECTOR_H
 
 #include "config.h"
-#include "vlt_container.h"
-#include "vlt_memory.h"
+#include "core/vlt_container.h"
+#include "core/vlt_memory.h"
 
 struct SVec {
     U64 len;

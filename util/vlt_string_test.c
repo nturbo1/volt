@@ -1,5 +1,5 @@
+#include "core/vlt_bytes.h"
 #include "vctest.h"
-#include "vlt_bytes.h"
 #include "vlt_string.h"
 
 #include <string.h>
@@ -137,7 +137,7 @@ TEST(whenNewStringFromLit_thenNonNullPointerToStringMustBeReturned,
         const U64 len = (U64)strlen(lit); // this doesn't count the NULL-terminator
 
         // WHEN
-        String *s = new_stringFromLit(lit);
+        String *s = new_stringFromLit(lit, NULL, NULL);
 
         // THEN
         VCTEST_ASSERT_TRUE(s != NULL);

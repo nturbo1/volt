@@ -1,3 +1,5 @@
+add_subdirectory(core)
+
 add_library(volt_cutil
     vlt_files.c
     vlt_vector.c
@@ -17,7 +19,6 @@ target_link_libraries(volt_cutil
     volt_cutil_core
 )
 
-add_subdirectory(core)
 
 # TEST
 target_link_libraries(execvctest

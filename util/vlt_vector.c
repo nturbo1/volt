@@ -1,6 +1,6 @@
 #include "vlt_vector.h"
-#include "vlt_assert.h"
-#include "vlt_bytes.h"
+#include "core/vlt_assert.h"
+#include "core/vlt_bytes.h"
 
 #include <stddef.h>
 #include <stdlib.h>

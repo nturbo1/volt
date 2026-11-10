@@ -2,8 +2,8 @@
 #define FRONTEND_C_DIAGNOSTICS_H
 
 #include "config.h"
+#include "core/vlt_assert.h"
 #include "token.h"
-#include "vlt_assert.h"
 #include "vlt_vector.h"
 
 #include <stdio.h>

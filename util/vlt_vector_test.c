@@ -1,5 +1,5 @@
+#include "core/vlt_assert.h"
 #include "vctest.h"
-#include "vlt_assert.h"
 #include "vlt_vector.h"
 
 #include <stdlib.h>

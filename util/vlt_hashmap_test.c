@@ -1,5 +1,5 @@
+#include "core/vlt_bytes.h"
 #include "vctest.h"
-#include "vlt_bytes.h"
 #include "vlt_hashmap.h"
 
 typedef struct HashMapTestInput {

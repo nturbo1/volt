@@ -181,17 +181,21 @@ typedef struct STokenInfo {
     String *lexeme;
 } STokenInfo;
 
-inline void tokenInfo_init(STokenInfo *const tokenInfo,
-                           const U64 col,
-                           const U64 ln,
-                           const EToken tok,
-                           const String *const lexeme)
+static inline void tokenInfo_init(STokenInfo *const tokenInfo,
+                                  const U64 col,
+                                  const U64 ln,
+                                  const EToken tok,
+                                  const String *const lexeme)
 {
     ASSERT(tokenInfo, NULL_POINTER_ERROR_MSG_FORMAT, "STokenInfo");
     tokenInfo->col = col;
     tokenInfo->ln = ln;
     tokenInfo->tok = tok;
-    tokenInfo->lexeme = string_copy(lexeme, 0, string_len(lexeme));
+    if (lexeme) {
+        tokenInfo->lexeme = string_copy(lexeme, 0, string_len(lexeme));
+    } else {
+        tokenInfo->lexeme = NULL;
+    }
 }
 
 #endif // FRONTEND_C_TOKEN_H
