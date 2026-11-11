@@ -1,0 +1,5 @@
+# Ignore everything
+*
+# Except
+!.gitignore
+!googletest-1.18.0.tar.gz
