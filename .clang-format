@@ -1,5 +1,6 @@
 # Indentation
 IndentWidth: 4
+AccessModifierOffset: -4
 ContinuationIndentWidth: 4
 ConstructorInitializerIndentWidth: 4
 IndentCaseLabels: false
@@ -16,11 +17,11 @@ AlignAfterOpenBracket: Align
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
 AlignEscapedNewlines: Right
-AlignOperands: false
+AlignOperands: Align
 AlignTrailingComments: false
 
 # Braces and control flow
-BreakBeforeBraces: WebKit
+BreakBeforeBraces: Allman
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: Empty
@@ -47,6 +48,7 @@ AllowAllArgumentsOnNextLine: false
 BinPackArguments: false
 BinPackParameters: false
 BreakBeforeBinaryOperators: All
+BreakBinaryOperations: OnePerLine
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeComma
 BreakInheritanceList: BeforeComma
