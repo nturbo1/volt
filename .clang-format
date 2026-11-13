@@ -62,7 +62,8 @@ PenaltyReturnTypeOnItsOwnLine: 1000
 
 # Pointers and references
 DerivePointerAlignment: false
-PointerAlignment: Right
+PointerAlignment: Left
+ReferenceAlignment: Pointer
 
 # Spacing
 SpaceAfterCStyleCast: false
