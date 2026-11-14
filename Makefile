@@ -13,9 +13,13 @@ debug:
 clean:
 	@rm -rf build
 
-test-debug: debug
-	@./build/exectests
+test-debug:
+	@cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
+	@cmake --build build --target exectests
+	@./build/tests/exectests
 
-test: all
-	@./build/exectests
+test:
+	@cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+	@cmake --build build --target exectests
+	@./build/tests/exectests
 	# @cd ./build && ctest --rerun-failed --output-on-failure
